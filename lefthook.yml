@@ -1,0 +1,13 @@
+pre-commit:
+  commands:
+    fmt-check:
+      run: cargo fmt -- --check
+    clippy:
+      run: cargo clippy -- -D warnings
+
+pre-push:
+  commands:
+    test:
+      run: cargo test
+    build-release:
+      run: cargo build --release

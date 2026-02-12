@@ -1,0 +1,23 @@
+[package]
+name = "xplorer"
+version = "0.1.0"
+edition = "2024"
+description = "Etherscan API CLI wrapper"
+license = "MIT"
+keywords = ["ethereum", "blockchain", "etherscan", "web3", "cli"]
+categories = ["command-line-utilities", "development-tools"]
+
+[[bin]]
+name = "xplorer"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+dirs = "5"
+rpassword = "7"
+reqwest = { version = "0.12", features = ["json"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+thiserror = "2"
