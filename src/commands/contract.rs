@@ -22,6 +22,7 @@ pub async fn get_source_code(client: &EtherscanClient, address: &str) -> Result<
         .ok_or_else(|| XplorerError::Api("No source code data returned".into()))?;
 
     println!("// Contract Name  : {}", entry.contract_name);
+    println!("// Chain ID       : {}", client.chain_id());
     println!("// Compiler       : {}", entry.compiler_version);
     println!("// EVM Version    : {}", entry.evm_version);
     println!(

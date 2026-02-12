@@ -46,6 +46,10 @@ impl EtherscanClient {
         }
     }
 
+    pub fn chain_id(&self) -> u64 {
+        self.chain_id
+    }
+
     async fn get<T: DeserializeOwned>(
         &self,
         module: &str,
