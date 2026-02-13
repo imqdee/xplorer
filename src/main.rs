@@ -2,6 +2,7 @@ mod client;
 mod commands;
 mod config;
 mod error;
+mod handlers;
 
 use clap::{Parser, Subcommand};
 use error::XplorerError;
@@ -39,17 +40,26 @@ enum ContractAction {
     Getabi {
         /// Contract address
         address: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
     },
     /// Get the source code of a verified contract
     Getsourcecode {
         /// Contract address
         address: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
     },
     /// Get contract creation info (creator address and tx hash)
     Getcontractcreation {
         /// Contract addresses (1 to 5)
         #[arg(num_args = 1..=5)]
         addresses: Vec<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
     },
 }
 
@@ -103,14 +113,14 @@ async fn run() -> Result<(), XplorerError> {
             let client = client::EtherscanClient::new(api_key, chain_id);
 
             match action {
-                ContractAction::Getabi { address } => {
-                    commands::contract::get_abi(&client, &address).await
+                ContractAction::Getabi { address, raw } => {
+                    commands::contract::get_abi(&client, &address, raw).await
                 }
-                ContractAction::Getsourcecode { address } => {
-                    commands::contract::get_source_code(&client, &address).await
+                ContractAction::Getsourcecode { address, raw } => {
+                    commands::contract::get_source_code(&client, &address, raw).await
                 }
-                ContractAction::Getcontractcreation { addresses } => {
-                    commands::contract::get_contract_creation(&client, &addresses).await
+                ContractAction::Getcontractcreation { addresses, raw } => {
+                    commands::contract::get_contract_creation(&client, &addresses, raw).await
                 }
             }
         }

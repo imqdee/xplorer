@@ -21,3 +21,6 @@ rpassword = "7"
 reqwest = { version = "0.12", features = ["json"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 thiserror = "2"
+
+[dev-dependencies]
+mockito = "1"

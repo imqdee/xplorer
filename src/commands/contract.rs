@@ -1,78 +1,194 @@
 use crate::client::EtherscanClient;
 use crate::error::XplorerError;
+use crate::handlers;
 
-pub async fn get_abi(client: &EtherscanClient, address: &str) -> Result<(), XplorerError> {
-    let abi_raw = client.get_abi(address).await?;
+async fn print_raw_response(
+    client: &EtherscanClient,
+    module: &str,
+    action: &str,
+    params: &[(&str, &str)],
+) -> Result<(), XplorerError> {
+    let response = client.call_api(module, action, params).await?;
 
-    let parsed: serde_json::Value = serde_json::from_str(&abi_raw)
-        .map_err(|e| XplorerError::Api(format!("Failed to parse ABI JSON: {e}")))?;
+    let status = response["status"].as_str().unwrap_or("0");
+    if status == "0" {
+        let error_json = serde_json::json!({
+            "status": status,
+            "message": response["result"].as_str().unwrap_or("Unknown error"),
+            "result": response["result"]
+        });
+        println!("{}", serde_json::to_string(&error_json).unwrap());
+        std::process::exit(1);
+    }
 
-    let pretty = serde_json::to_string_pretty(&parsed)
-        .map_err(|e| XplorerError::Api(format!("Failed to format ABI JSON: {e}")))?;
-
-    println!("{pretty}");
+    let result_compact = serde_json::to_string(&response["result"])
+        .map_err(|e| XplorerError::Api(format!("Failed to serialize result: {e}")))?;
+    println!("{result_compact}");
     Ok(())
 }
 
-pub async fn get_source_code(client: &EtherscanClient, address: &str) -> Result<(), XplorerError> {
-    let entries = client.get_source_code(address).await?;
-
-    let entry = entries
-        .first()
-        .ok_or_else(|| XplorerError::Api("No source code data returned".into()))?;
-
-    println!("// Contract Name  : {}", entry.contract_name);
-    println!("// Chain ID       : {}", client.chain_id());
-    println!("// Compiler       : {}", entry.compiler_version);
-    println!("// EVM Version    : {}", entry.evm_version);
-    println!(
-        "// Optimization   : {} (runs: {})",
-        entry.optimization_used, entry.runs
-    );
-    println!("// License        : {}", entry.license_type);
-    println!("// Proxy          : {}", entry.proxy);
-
-    if !entry.implementation.is_empty() {
-        println!("// Implementation : {}", entry.implementation);
-    }
-
-    println!();
-
-    if entry.source_code.starts_with("{{") {
-        // Standard JSON Input: strip outer braces to get valid JSON
-        let inner = &entry.source_code[1..entry.source_code.len() - 1];
-        let parsed: serde_json::Value = serde_json::from_str(inner)
-            .map_err(|e| XplorerError::Api(format!("Failed to parse source JSON: {e}")))?;
-        let sources = parsed["sources"]
-            .as_object()
-            .ok_or_else(|| XplorerError::Api("Missing 'sources' in source JSON".into()))?;
-        for (path, obj) in sources {
-            println!("// File: {path}\n");
-            if let Some(content) = obj["content"].as_str() {
-                println!("{content}\n");
-            }
-        }
+pub async fn get_abi(
+    client: &EtherscanClient,
+    address: &str,
+    raw: bool,
+) -> Result<(), XplorerError> {
+    if raw {
+        print_raw_response(client, "contract", "getabi", &[("address", address)]).await
     } else {
-        println!("{}", entry.source_code);
+        let formatted = handlers::contract::format_abi(client, address).await?;
+        print!("{formatted}");
+        Ok(())
     }
+}
 
-    Ok(())
+pub async fn get_source_code(
+    client: &EtherscanClient,
+    address: &str,
+    raw: bool,
+) -> Result<(), XplorerError> {
+    if raw {
+        print_raw_response(client, "contract", "getsourcecode", &[("address", address)]).await
+    } else {
+        let formatted = handlers::contract::format_source_code(client, address).await?;
+        print!("{formatted}");
+        Ok(())
+    }
 }
 
 pub async fn get_contract_creation(
     client: &EtherscanClient,
     addresses: &[String],
+    raw: bool,
 ) -> Result<(), XplorerError> {
-    let entries = client.get_contract_creation(addresses).await?;
+    if raw {
+        let joined = addresses.join(",");
+        print_raw_response(
+            client,
+            "contract",
+            "getcontractcreation",
+            &[("contractaddresses", &joined)],
+        )
+        .await
+    } else {
+        let formatted = handlers::contract::format_contract_creation(client, addresses).await?;
+        print!("{formatted}");
+        Ok(())
+    }
+}
 
-    for entry in &entries {
-        println!("Contract : {}", entry.contract_address);
-        println!("Creator  : {}", entry.contract_creator);
-        println!("Tx Hash  : {}", entry.tx_hash);
-        if entries.len() > 1 {
-            println!();
-        }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::client::EtherscanClient;
+
+    #[tokio::test]
+    async fn test_print_raw_response_success() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"status":"1","message":"OK","result":[{"test":"data"}]}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+
+        let result =
+            print_raw_response(&client, "contract", "getabi", &[("address", "0x123")]).await;
+        mock.assert_async().await;
+
+        assert!(result.is_ok());
     }
 
-    Ok(())
+    #[tokio::test]
+    async fn test_get_abi_raw_vs_formatted() {
+        let mut server = mockito::Server::new_async().await;
+
+        let _mock_raw = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"status":"1","message":"OK","result":"[{\"name\":\"test\"}]"}"#)
+            .expect(2)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+
+        let result_raw = get_abi(&client, "0x123", true).await;
+        assert!(result_raw.is_ok());
+
+        let result_formatted = get_abi(&client, "0x123", false).await;
+        assert!(result_formatted.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_get_source_code_raw_mode() {
+        let mut server = mockito::Server::new_async().await;
+        let source_response = r#"{
+            "status": "1",
+            "message": "OK",
+            "result": [{
+                "SourceCode": "pragma solidity ^0.8.0;",
+                "ABI": "[]",
+                "ContractName": "Test",
+                "CompilerVersion": "v0.8.0",
+                "OptimizationUsed": "1",
+                "Runs": "200",
+                "ConstructorArguments": "",
+                "EVMVersion": "Default",
+                "Library": "",
+                "LicenseType": "MIT",
+                "Proxy": "0",
+                "Implementation": "",
+                "SwarmSource": ""
+            }]
+        }"#;
+
+        let _mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(source_response)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+
+        let result = get_source_code(&client, "0x123", true).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_get_contract_creation_raw_mode() {
+        let mut server = mockito::Server::new_async().await;
+        let creation_response = r#"{
+            "status": "1",
+            "message": "OK",
+            "result": [{
+                "contractAddress": "0x123",
+                "contractCreator": "0xabc",
+                "txHash": "0xdef"
+            }]
+        }"#;
+
+        let _mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(creation_response)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+
+        let addresses = vec![String::from("0x123")];
+        let result = get_contract_creation(&client, &addresses, true).await;
+        assert!(result.is_ok());
+    }
 }
