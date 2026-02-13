@@ -29,6 +29,8 @@ pub struct ContractCreationEntry {
     pub contract_address: String,
     pub contract_creator: String,
     pub tx_hash: String,
+    pub block_number: Option<String>,
+    pub timestamp: Option<String>,
 }
 
 pub async fn format_abi(client: &EtherscanClient, address: &str) -> Result<String, XplorerError> {
@@ -143,6 +145,15 @@ pub async fn format_contract_creation(
         output.push_str(&format!("Contract : {}\n", entry.contract_address));
         output.push_str(&format!("Creator  : {}\n", entry.contract_creator));
         output.push_str(&format!("Tx Hash  : {}\n", entry.tx_hash));
+
+        if let Some(ref block_number) = entry.block_number {
+            output.push_str(&format!("Block    : {}\n", block_number));
+        }
+
+        if let Some(ref timestamp) = entry.timestamp {
+            output.push_str(&format!("Time     : {}\n", timestamp));
+        }
+
         if i < entries.len() - 1 {
             output.push('\n');
         }
@@ -255,7 +266,9 @@ mod tests {
             "result": [{
                 "contractAddress": "0x123",
                 "contractCreator": "0xabc",
-                "txHash": "0xdef"
+                "txHash": "0xdef",
+                "blockNumber": "10720863",
+                "timestamp": "1598242563"
             }]
         }"#;
 
@@ -278,6 +291,8 @@ mod tests {
         assert!(result.contains("Contract : 0x123"));
         assert!(result.contains("Creator  : 0xabc"));
         assert!(result.contains("Tx Hash  : 0xdef"));
+        assert!(result.contains("Block    : 10720863"));
+        assert!(result.contains("Time     : 1598242563"));
     }
 
     #[tokio::test]
@@ -290,12 +305,16 @@ mod tests {
                 {
                     "contractAddress": "0x123",
                     "contractCreator": "0xabc",
-                    "txHash": "0xdef"
+                    "txHash": "0xdef",
+                    "blockNumber": "10720863",
+                    "timestamp": "1598242563"
                 },
                 {
                     "contractAddress": "0x456",
                     "contractCreator": "0xghi",
-                    "txHash": "0xjkl"
+                    "txHash": "0xjkl",
+                    "blockNumber": "10720999",
+                    "timestamp": "1598244321"
                 }
             ]
         }"#;
@@ -319,7 +338,45 @@ mod tests {
 
         assert!(result.contains("0x123"));
         assert!(result.contains("0x456"));
+        assert!(result.contains("Block    : 10720863"));
+        assert!(result.contains("Block    : 10720999"));
         let newlines = result.matches("\n\n").count();
         assert_eq!(newlines, 1);
+    }
+
+    #[tokio::test]
+    async fn test_format_contract_creation_missing_optional_fields() {
+        let mut server = mockito::Server::new_async().await;
+        let creation_response = r#"{
+            "status": "1",
+            "message": "OK",
+            "result": [{
+                "contractAddress": "0x123",
+                "contractCreator": "0xabc",
+                "txHash": "0xdef"
+            }]
+        }"#;
+
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(creation_response)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+
+        let result = format_contract_creation(&client, &[String::from("0x123")])
+            .await
+            .unwrap();
+        mock.assert_async().await;
+
+        assert!(result.contains("Contract : 0x123"));
+        assert!(result.contains("Creator  : 0xabc"));
+        assert!(result.contains("Tx Hash  : 0xdef"));
+        assert!(!result.contains("Block    :"));
+        assert!(!result.contains("Time     :"));
     }
 }

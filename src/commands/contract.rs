@@ -172,7 +172,9 @@ mod tests {
             "result": [{
                 "contractAddress": "0x123",
                 "contractCreator": "0xabc",
-                "txHash": "0xdef"
+                "txHash": "0xdef",
+                "blockNumber": "10720863",
+                "timestamp": "1598242563"
             }]
         }"#;
 
