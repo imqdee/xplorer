@@ -1,9 +1,10 @@
 [package]
 name = "xplorer"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 description = "Etherscan API CLI wrapper"
 license = "MIT"
+repository = "https://github.com/imqdee/xplorer"
 keywords = ["ethereum", "blockchain", "etherscan", "web3", "cli"]
 categories = ["command-line-utilities", "development-tools"]
 
