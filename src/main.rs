@@ -32,6 +32,19 @@ enum Commands {
         #[command(subcommand)]
         action: ConfigAction,
     },
+    /// Send a raw request to any Etherscan API endpoint
+    Raw {
+        /// Etherscan API module (e.g. account, transaction, block, stats)
+        module: String,
+        /// Etherscan API action (e.g. balance, txlist, tokensupply)
+        action: String,
+        /// Additional query parameters in key=value format
+        #[arg(long = "param")]
+        params: Vec<String>,
+        /// Output single-line JSON instead of pretty-printed
+        #[arg(long)]
+        compact: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -123,6 +136,19 @@ async fn run() -> Result<(), XplorerError> {
                     commands::contract::get_contract_creation(&client, &addresses, raw).await
                 }
             }
+        }
+        Commands::Raw {
+            module,
+            action,
+            params,
+            compact,
+        } => {
+            let cfg = config::Config::load();
+            let api_key = cfg.require_api_key()?.to_string();
+            let chain_id = resolve_chain_id(cli.chain_id)?;
+            let client = client::EtherscanClient::new(api_key, chain_id);
+
+            commands::raw::execute(&client, &module, &action, &params, compact).await
         }
     }
 }

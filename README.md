@@ -8,6 +8,7 @@ The goal is to cover all modules and routes exposed by the Etherscan API. This i
   - `getabi` - Get the ABI of a verified contract
   - `getsourcecode` - Get the source code of a verified contract
   - `getcontractcreation` - Get contract creation info (creator address + deployment tx hash)
+- **raw** - Direct access to any Etherscan API endpoint (module + action + arbitrary params)
 
 ## Installation
 
@@ -63,6 +64,32 @@ xplorer --chain-id 1 contract getcontractcreation 0xdAC17F958D2ee523a22062069945
 # Query multiple contracts at once (up to 5)
 xplorer --chain-id 1 contract getcontractcreation 0xdAC1...1ec7 0xA0b8...eB48
 ```
+
+### Raw API Access
+
+The `raw` command gives you direct access to the entire Etherscan API surface. Pass any module, action, and key=value parameters:
+
+```bash
+xplorer raw <module> <action> [--param key=value]... [--compact]
+```
+
+Output defaults to pretty-printed JSON (the `result` field from the Etherscan response). Use `--compact` for single-line JSON, useful for piping.
+
+```bash
+# Get account balance
+xplorer --chain-id 1 raw account balance --param address=0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe --param tag=latest
+
+# Get token supply (compact output for piping)
+xplorer --chain-id 1 raw stats tokensupply --param contractaddress=0xdAC17F958D2ee523a2206206994597C13D831ec7 --compact
+
+# Get transaction list and pipe to jq
+xplorer --chain-id 1 raw account txlist --param address=0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe --param startblock=0 --param endblock=99999999 --compact | jq '.[0]'
+
+# Get contract ABI (equivalent to `contract getabi --raw`)
+xplorer --chain-id 1 raw contract getabi --param address=0xdAC17F958D2ee523a2206206994597C13D831ec7
+```
+
+See all available modules and actions at [docs.etherscan.io](https://docs.etherscan.io/etherscan-v2).
 
 ### Supported Chains
 
