@@ -53,7 +53,7 @@ xplorer --chain-id 1 account balance 0xde0B2...9BAe --raw | jq .
 
 ## Supported Endpoints
 
-xplorer covers 45 read-only endpoints across 9 modules. Endpoints marked **[Pro]** require an [Etherscan Pro](https://docs.etherscan.io/getting-started/endpoint-urls#pro-api) API key.
+xplorer covers 57 read-only endpoints across 9 modules. Endpoints marked **[Pro]** require an [Etherscan Pro](https://docs.etherscan.io/getting-started/endpoint-urls#pro-api) API key.
 
 ### Account
 
@@ -109,18 +109,30 @@ Transaction list commands (`txlist`, `txlistinternal`, `tokentx`, `tokennfttx`, 
 
 ### Stats
 
-All stats endpoints are **[Pro]** and accept `--startdate` and `--enddate` in `yyyy-MM-dd` format, and `--sort` (asc/desc).
-
 | Command | Description |
 |---------|-------------|
-| `stats dailyavgblocksize --startdate <d> --enddate <d>` | Get daily average block size |
-| `stats dailyblkcount --startdate <d> --enddate <d>` | Get daily block count and rewards |
-| `stats dailyblockrewards --startdate <d> --enddate <d>` | Get daily block rewards |
-| `stats dailyavgblocktime --startdate <d> --enddate <d>` | Get daily average block time |
-| `stats dailyuncleblkcount --startdate <d> --enddate <d>` | Get daily uncle block count and rewards |
-| `stats dailyavggaslimit --startdate <d> --enddate <d>` | Get daily average gas limit |
-| `stats dailyavggasprice --startdate <d> --enddate <d>` | Get daily average gas price |
-| `stats dailygasused --startdate <d> --enddate <d>` | Get daily total gas used |
+| `stats ethsupply` | Get total ETH supply in wei |
+| `stats ethsupply2` | Get ETH supply breakdown (supply, staking, burnt, withdrawn) |
+| `stats ethprice` | Get current ETH price (USD and BTC) |
+| `stats nodecount` | Get total Ethereum node count |
+| `stats chainsize --startdate <d> --enddate <d>` | Get historical chain size **[Pro]** |
+| `stats dailyavgblocksize --startdate <d> --enddate <d>` | Get daily average block size **[Pro]** |
+| `stats dailyblkcount --startdate <d> --enddate <d>` | Get daily block count and rewards **[Pro]** |
+| `stats dailyblockrewards --startdate <d> --enddate <d>` | Get daily block rewards **[Pro]** |
+| `stats dailyavgblocktime --startdate <d> --enddate <d>` | Get daily average block time **[Pro]** |
+| `stats dailyuncleblkcount --startdate <d> --enddate <d>` | Get daily uncle block count and rewards **[Pro]** |
+| `stats dailyavggaslimit --startdate <d> --enddate <d>` | Get daily average gas limit **[Pro]** |
+| `stats dailyavggasprice --startdate <d> --enddate <d>` | Get daily average gas price **[Pro]** |
+| `stats dailygasused --startdate <d> --enddate <d>` | Get daily total gas used **[Pro]** |
+| `stats ethdailyprice --startdate <d> --enddate <d>` | Get daily ETH price **[Pro]** |
+| `stats dailyavghashrate --startdate <d> --enddate <d>` | Get daily average network hash rate **[Pro]** |
+| `stats dailyavgnetdifficulty --startdate <d> --enddate <d>` | Get daily average network difficulty **[Pro]** |
+| `stats dailynetutilization --startdate <d> --enddate <d>` | Get daily network utilization **[Pro]** |
+| `stats dailynewaddress --startdate <d> --enddate <d>` | Get daily new address count **[Pro]** |
+| `stats dailytx --startdate <d> --enddate <d>` | Get daily transaction count **[Pro]** |
+| `stats dailytxnfee --startdate <d> --enddate <d>` | Get daily transaction fees **[Pro]** |
+
+Date-range endpoints accept `--startdate` and `--enddate` in `yyyy-MM-dd` format, and `--sort` (asc/desc). `chainsize` also accepts `--clienttype` (default: geth) and `--syncmode` (default: default).
 
 ### Gas Tracker
 

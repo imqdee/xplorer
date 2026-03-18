@@ -53,7 +53,7 @@ enum Commands {
         #[command(subcommand)]
         action: Box<LogsAction>,
     },
-    /// Query daily network statistics from Etherscan [Pro]
+    /// Query network statistics from Etherscan
     Stats {
         #[command(subcommand)]
         action: StatsAction,
@@ -727,6 +727,156 @@ enum StatsAction {
         #[arg(long)]
         raw: bool,
     },
+    /// Get total ETH supply in wei
+    Ethsupply {
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get ETH supply breakdown (supply, staking, burnt, withdrawn)
+    Ethsupply2 {
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get current ETH price (USD and BTC)
+    Ethprice {
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get total Ethereum node count
+    Nodecount {
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get historical chain size [Pro]
+    Chainsize {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Client type (e.g. geth, parity)
+        #[arg(long, default_value = "geth")]
+        clienttype: String,
+        /// Sync mode (e.g. default, archive)
+        #[arg(long, default_value = "default")]
+        syncmode: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get daily ETH price [Pro]
+    Ethdailyprice {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get daily average network hash rate [Pro]
+    Dailyavghashrate {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get daily average network difficulty [Pro]
+    Dailyavgnetdifficulty {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get daily network utilization [Pro]
+    Dailynetutilization {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get daily new address count [Pro]
+    Dailynewaddress {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get daily transaction count [Pro]
+    Dailytx {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get daily transaction fees [Pro]
+    Dailytxnfee {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -1295,6 +1445,87 @@ async fn run() -> Result<(), XplorerError> {
                     sort,
                     raw,
                 } => commands::stats::dailygasused(&client, &startdate, &enddate, &sort, raw).await,
+                StatsAction::Ethsupply { raw } => commands::stats::ethsupply(&client, raw).await,
+                StatsAction::Ethsupply2 { raw } => commands::stats::ethsupply2(&client, raw).await,
+                StatsAction::Ethprice { raw } => commands::stats::ethprice(&client, raw).await,
+                StatsAction::Nodecount { raw } => commands::stats::nodecount(&client, raw).await,
+                StatsAction::Chainsize {
+                    startdate,
+                    enddate,
+                    clienttype,
+                    syncmode,
+                    sort,
+                    raw,
+                } => {
+                    commands::stats::chainsize(
+                        &client,
+                        &startdate,
+                        &enddate,
+                        &clienttype,
+                        &syncmode,
+                        &sort,
+                        raw,
+                    )
+                    .await
+                }
+                StatsAction::Ethdailyprice {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => {
+                    commands::stats::ethdailyprice(&client, &startdate, &enddate, &sort, raw).await
+                }
+                StatsAction::Dailyavghashrate {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => {
+                    commands::stats::dailyavghashrate(&client, &startdate, &enddate, &sort, raw)
+                        .await
+                }
+                StatsAction::Dailyavgnetdifficulty {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => {
+                    commands::stats::dailyavgnetdifficulty(
+                        &client, &startdate, &enddate, &sort, raw,
+                    )
+                    .await
+                }
+                StatsAction::Dailynetutilization {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => {
+                    commands::stats::dailynetutilization(&client, &startdate, &enddate, &sort, raw)
+                        .await
+                }
+                StatsAction::Dailynewaddress {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => {
+                    commands::stats::dailynewaddress(&client, &startdate, &enddate, &sort, raw)
+                        .await
+                }
+                StatsAction::Dailytx {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => commands::stats::dailytx(&client, &startdate, &enddate, &sort, raw).await,
+                StatsAction::Dailytxnfee {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => commands::stats::dailytxnfee(&client, &startdate, &enddate, &sort, raw).await,
             }
         }
         Commands::Token { action } => {
