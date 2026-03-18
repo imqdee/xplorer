@@ -608,6 +608,36 @@ pub async fn format_dailytxnfee(
     Ok(output)
 }
 
+pub async fn format_tokensupply(
+    client: &EtherscanClient,
+    params: &[(&str, &str)],
+) -> Result<String, XplorerError> {
+    let response = client.call_api("stats", "tokensupply", params).await?;
+    check_api_status(&response)?;
+
+    let supply = response["result"]
+        .as_str()
+        .ok_or_else(|| XplorerError::Api("Failed to parse tokensupply response".to_string()))?;
+
+    Ok(format!("Token Supply: {supply}\n"))
+}
+
+pub async fn format_tokensupplyhistory(
+    client: &EtherscanClient,
+    params: &[(&str, &str)],
+) -> Result<String, XplorerError> {
+    let response = client
+        .call_api("stats", "tokensupplyhistory", params)
+        .await?;
+    check_api_status(&response)?;
+
+    let supply = response["result"].as_str().ok_or_else(|| {
+        XplorerError::Api("Failed to parse tokensupplyhistory response".to_string())
+    })?;
+
+    Ok(format!("Token Supply: {supply}\n"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1682,6 +1712,115 @@ mod tests {
         let result = format_dailytxnfee(
             &client,
             &[("startdate", "2019-02-01"), ("enddate", "2019-02-28")],
+        )
+        .await;
+        mock.assert_async().await;
+        assert!(result.unwrap_err().to_string().contains("Pro endpoint"));
+    }
+
+    // --- tokensupply ---
+
+    #[tokio::test]
+    async fn test_format_tokensupply_success() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("module".into(), "stats".into()),
+                mockito::Matcher::UrlEncoded("action".into(), "tokensupply".into()),
+            ]))
+            .with_status(200)
+            .with_body(mock_success(r#""21000000000000000000000000""#))
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("k".into(), Some(1), server.url());
+        let result = format_tokensupply(
+            &client,
+            &[(
+                "contractaddress",
+                "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+            )],
+        )
+        .await
+        .unwrap();
+        mock.assert_async().await;
+
+        assert!(result.contains("Token Supply: 21000000000000000000000000"));
+    }
+
+    #[tokio::test]
+    async fn test_format_tokensupply_error() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_body(mock_error("Invalid address"))
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("k".into(), Some(1), server.url());
+        let result = format_tokensupply(&client, &[("contractaddress", "0xinvalid")]).await;
+        mock.assert_async().await;
+        assert!(result.unwrap_err().to_string().contains("Invalid address"));
+    }
+
+    // --- tokensupplyhistory ---
+
+    #[tokio::test]
+    async fn test_format_tokensupplyhistory_success() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("module".into(), "stats".into()),
+                mockito::Matcher::UrlEncoded("action".into(), "tokensupplyhistory".into()),
+            ]))
+            .with_status(200)
+            .with_body(mock_success(r#""20000000000000000000000000""#))
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("k".into(), Some(1), server.url());
+        let result = format_tokensupplyhistory(
+            &client,
+            &[
+                (
+                    "contractaddress",
+                    "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+                ),
+                ("blockno", "8000000"),
+            ],
+        )
+        .await
+        .unwrap();
+        mock.assert_async().await;
+
+        assert!(result.contains("Token Supply: 20000000000000000000000000"));
+    }
+
+    #[tokio::test]
+    async fn test_format_tokensupplyhistory_error() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_body(mock_error("Pro endpoint"))
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("k".into(), Some(1), server.url());
+        let result = format_tokensupplyhistory(
+            &client,
+            &[
+                (
+                    "contractaddress",
+                    "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+                ),
+                ("blockno", "8000000"),
+            ],
         )
         .await;
         mock.assert_async().await;

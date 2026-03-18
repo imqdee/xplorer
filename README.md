@@ -53,7 +53,7 @@ xplorer --chain-id 1 account balance 0xde0B2...9BAe --raw | jq .
 
 ## Supported Endpoints
 
-xplorer covers 57 read-only endpoints across 9 modules. Endpoints marked **[Pro]** require an [Etherscan Pro](https://docs.etherscan.io/getting-started/endpoint-urls#pro-api) API key.
+xplorer covers 59 read-only endpoints across 9 modules. Endpoints marked **[Pro]** require an [Etherscan Pro](https://docs.etherscan.io/getting-started/endpoint-urls#pro-api) API key.
 
 ### Account
 
@@ -131,6 +131,8 @@ Transaction list commands (`txlist`, `txlistinternal`, `tokentx`, `tokennfttx`, 
 | `stats dailynewaddress --startdate <d> --enddate <d>` | Get daily new address count **[Pro]** |
 | `stats dailytx --startdate <d> --enddate <d>` | Get daily transaction count **[Pro]** |
 | `stats dailytxnfee --startdate <d> --enddate <d>` | Get daily transaction fees **[Pro]** |
+| `stats tokensupply --contractaddress <ca>` | Get ERC-20 token total supply |
+| `stats tokensupplyhistory --contractaddress <ca> --blockno <n>` | Get historical ERC-20 token total supply **[Pro]** |
 
 Date-range endpoints accept `--startdate` and `--enddate` in `yyyy-MM-dd` format, and `--sort` (asc/desc). `chainsize` also accepts `--clienttype` (default: geth) and `--syncmode` (default: default).
 

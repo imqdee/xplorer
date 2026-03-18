@@ -877,6 +877,27 @@ enum StatsAction {
         #[arg(long)]
         raw: bool,
     },
+    /// Get ERC-20 token total supply by contract address
+    Tokensupply {
+        /// Token contract address
+        #[arg(long)]
+        contractaddress: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get historical ERC-20 token total supply at a block [Pro]
+    Tokensupplyhistory {
+        /// Token contract address
+        #[arg(long)]
+        contractaddress: String,
+        /// Block number
+        #[arg(long)]
+        blockno: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -1526,6 +1547,18 @@ async fn run() -> Result<(), XplorerError> {
                     sort,
                     raw,
                 } => commands::stats::dailytxnfee(&client, &startdate, &enddate, &sort, raw).await,
+                StatsAction::Tokensupply {
+                    contractaddress,
+                    raw,
+                } => commands::stats::tokensupply(&client, &contractaddress, raw).await,
+                StatsAction::Tokensupplyhistory {
+                    contractaddress,
+                    blockno,
+                    raw,
+                } => {
+                    commands::stats::tokensupplyhistory(&client, &contractaddress, &blockno, raw)
+                        .await
+                }
             }
         }
         Commands::Token { action } => {

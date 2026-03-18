@@ -334,6 +334,37 @@ pub async fn dailytxnfee(
     }
 }
 
+pub async fn tokensupply(
+    client: &EtherscanClient,
+    contractaddress: &str,
+    raw: bool,
+) -> Result<(), XplorerError> {
+    let params = vec![("contractaddress", contractaddress)];
+    if raw {
+        super::print_raw_response(client, "stats", "tokensupply", &params).await
+    } else {
+        let formatted = handlers::stats::format_tokensupply(client, &params).await?;
+        print!("{formatted}");
+        Ok(())
+    }
+}
+
+pub async fn tokensupplyhistory(
+    client: &EtherscanClient,
+    contractaddress: &str,
+    blockno: &str,
+    raw: bool,
+) -> Result<(), XplorerError> {
+    let params = vec![("contractaddress", contractaddress), ("blockno", blockno)];
+    if raw {
+        super::print_raw_response(client, "stats", "tokensupplyhistory", &params).await
+    } else {
+        let formatted = handlers::stats::format_tokensupplyhistory(client, &params).await?;
+        print!("{formatted}");
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
