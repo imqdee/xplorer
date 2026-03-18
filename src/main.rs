@@ -33,6 +33,11 @@ enum Commands {
         #[command(subcommand)]
         action: ContractAction,
     },
+    /// Query block data from Etherscan
+    Block {
+        #[command(subcommand)]
+        action: BlockAction,
+    },
     /// Manage configuration
     Config {
         #[command(subcommand)]
@@ -565,6 +570,37 @@ enum TransactionAction {
 }
 
 #[derive(Subcommand)]
+enum BlockAction {
+    /// Get block and uncle reward by block number
+    Getblockreward {
+        /// Block number
+        blockno: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get estimated block countdown time by block number
+    Getblockcountdown {
+        /// Target block number
+        blockno: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get block number by timestamp
+    Getblocknobytime {
+        /// Unix timestamp
+        timestamp: String,
+        /// Closest block: before or after (default: before)
+        #[arg(long, default_value = "before")]
+        closest: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+}
+
+#[derive(Subcommand)]
 enum TokenAction {
     /// Get token info by contract address
     Tokeninfo {
@@ -1033,6 +1069,26 @@ async fn run() -> Result<(), XplorerError> {
                     )
                     .await
                 }
+            }
+        }
+        Commands::Block { action } => {
+            let cfg = config::Config::load();
+            let api_key = cfg.require_api_key()?.to_string();
+            let chain_id = resolve_chain_id(cli.chain_id)?;
+            let client = client::EtherscanClient::new(api_key, Some(chain_id));
+
+            match action {
+                BlockAction::Getblockreward { blockno, raw } => {
+                    commands::block::getblockreward(&client, &blockno, raw).await
+                }
+                BlockAction::Getblockcountdown { blockno, raw } => {
+                    commands::block::getblockcountdown(&client, &blockno, raw).await
+                }
+                BlockAction::Getblocknobytime {
+                    timestamp,
+                    closest,
+                    raw,
+                } => commands::block::getblocknobytime(&client, &timestamp, &closest, raw).await,
             }
         }
         Commands::Token { action } => {

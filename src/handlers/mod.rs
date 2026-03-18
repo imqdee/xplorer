@@ -1,5 +1,6 @@
 pub mod account;
 pub mod apilimit;
+pub mod block;
 pub mod chainlist;
 pub mod contract;
 pub mod fmt;
