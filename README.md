@@ -2,13 +2,7 @@
 
 [Etherscan](https://etherscan.io/) API CLI wrapper. Query blockchain data from the terminal using the [Etherscan V2 API](https://docs.etherscan.io/etherscan-v2), with multichain support via a single API key.
 
-The goal is to cover all modules and routes exposed by the Etherscan API. This is a work in progress. Currently supported:
-
-- **contract** module
-  - `getabi` - Get the ABI of a verified contract
-  - `getsourcecode` - Get the source code of a verified contract
-  - `getcontractcreation` - Get contract creation info (creator address + deployment tx hash)
-- **raw** - Direct access to any Etherscan API endpoint (module + action + arbitrary params)
+See the official [Etherscan API documentation](https://docs.etherscan.io/introduction) for the full API reference.
 
 ## Installation
 
@@ -37,61 +31,133 @@ Config is stored at `~/.xplorer/config.toml`.
 Every query requires a chain ID, provided via the `--chain-id` flag:
 
 ```bash
-xplorer --chain-id 1 contract getabi 0x...
+xplorer --chain-id 1 account balance 0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe
 ```
 
 xplorer is also compatible with [Stargate](https://github.com/imqdee/stargate), a blockchain network switcher CLI for Foundry. When you switch networks with Stargate, it exports a `STARGATE_CHAIN_ID` environment variable that xplorer picks up automatically, so you don't need to pass `--chain-id` on every call:
 
 ```bash
 sg switch mainnet
-xplorer contract getabi 0x...   # uses chain ID 1 from Stargate
+xplorer account balance 0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe
 ```
 
 If both are provided, the `--chain-id` flag takes precedence.
 
-### Contract Module
+### Raw output
+
+Every formatted command supports a `--raw` flag that outputs the JSON `result` field directly, useful for scripting and piping:
 
 ```bash
-# Get the ABI of a verified contract (pretty-printed JSON)
-xplorer --chain-id 1 contract getabi 0xdAC17F958D2ee523a2206206994597C13D831ec7
-
-# Get full source code with metadata (compiler, optimization, license, proxy info)
-xplorer --chain-id 1 contract getsourcecode 0xdAC17F958D2ee523a2206206994597C13D831ec7
-
-# Get contract creation info (creator address + deployment tx hash)
-xplorer --chain-id 1 contract getcontractcreation 0xdAC17F958D2ee523a2206206994597C13D831ec7
-
-# Query multiple contracts at once (up to 5)
-xplorer --chain-id 1 contract getcontractcreation 0xdAC1...1ec7 0xA0b8...eB48
+xplorer --chain-id 1 account balance 0xde0B2...9BAe --raw | jq .
 ```
+
+## Supported Endpoints
+
+xplorer covers 37 read-only endpoints across 8 modules. Endpoints marked **[Pro]** require an [Etherscan Pro](https://docs.etherscan.io/getting-started/endpoint-urls#pro-api) API key.
+
+### Account
+
+| Command | Description |
+|---------|-------------|
+| `account balance <address>` | Get native balance for an address |
+| `account balancehistory <address> --blockno <n>` | Get native balance at a historical block **[Pro]** |
+| `account txlist <address>` | Get normal transactions |
+| `account txlistinternal <address>` | Get internal transactions |
+| `account tokentx <address>` | Get ERC-20 token transfer events |
+| `account tokennfttx <address>` | Get ERC-721 (NFT) transfer events |
+| `account token1155tx <address>` | Get ERC-1155 transfer events |
+| `account tokenbalance <address> --contractaddress <ca>` | Get ERC-20 token balance for a specific contract |
+| `account tokenbalancehistory <address> --contractaddress <ca> --blockno <n>` | Get ERC-20 token balance at a historical block **[Pro]** |
+| `account addresstokenbalance <address>` | Get all ERC-20 token holdings **[Pro]** |
+| `account addresstokennftbalance <address>` | Get all ERC-721 (NFT) holdings **[Pro]** |
+| `account addresstokennftinventory <address>` | Get ERC-721 token IDs for an address and contract **[Pro]** |
+| `account getminedblocks <address>` | Get blocks mined by an address |
+| `account getdeposittxs <address>` | Get L2 deposit transactions |
+| `account getwithdrawaltxs <address>` | Get L2 withdrawal transactions |
+| `account txsbeaconwithdrawal <address>` | Get beacon chain withdrawals |
+| `account txnbridge <address>` | Get bridge transactions |
+| `account fundedby <address>` | Get the address that funded an account |
+
+Transaction list commands (`txlist`, `txlistinternal`, `tokentx`, `tokennfttx`, `token1155tx`, `getdeposittxs`, `getwithdrawaltxs`, `txsbeaconwithdrawal`, `txnbridge`) support `--startblock`, `--endblock`, `--page`, `--offset`, and `--sort` options.
+
+### Contract
+
+| Command | Description |
+|---------|-------------|
+| `contract getabi <address>` | Get the ABI of a verified contract |
+| `contract getsourcecode <address>` | Get source code, compiler settings, and metadata |
+| `contract getcontractcreation <address>...` | Get contract creator address and deployment tx (up to 5) |
+| `contract checkverifystatus <guid>` | Check source code verification status |
+| `contract checkproxyverification <guid>` | Check proxy contract verification status |
+
+### Token
+
+| Command | Description |
+|---------|-------------|
+| `token tokeninfo <contractaddress>` | Get token name, symbol, type, supply, and social links |
+| `token tokenholdercount <contractaddress>` | Get total number of token holders **[Pro]** |
+| `token tokenholderlist <contractaddress>` | Get paginated list of token holders **[Pro]** |
+| `token topholders <contractaddress>` | Get top token holders **[Pro]** |
+
+### Block
+
+| Command | Description |
+|---------|-------------|
+| `block getblockreward <blockno>` | Get block reward and uncle details |
+| `block getblockcountdown <blockno>` | Get estimated countdown to a future block |
+| `block getblocknobytime <timestamp>` | Find the block closest to a given unix timestamp |
+
+### Gas Tracker
+
+| Command | Description |
+|---------|-------------|
+| `gas gasoracle` | Get current safe, standard, and fast gas prices |
+| `gas gasestimate <gasprice>` | Get estimated confirmation time for a gas price (wei) |
+
+### Logs
+
+| Command | Description |
+|---------|-------------|
+| `logs getlogs --from-block <n> --to-block <n>` | Get event logs by address and/or topics |
+
+Supports filtering by `--address`, `--topic0` through `--topic3`, and topic operators (`--topic0-1-opr`, etc.).
+
+### Transaction
+
+| Command | Description |
+|---------|-------------|
+| `transaction getstatus <txhash>` | Check execution status of a transaction |
+| `transaction gettxreceiptstatus <txhash>` | Check transaction receipt status (success/fail) |
+
+### Utilities
+
+| Command | Description |
+|---------|-------------|
+| `apilimit` | Check API credit usage and rate limits |
+| `chainlist` | List all 60+ chains supported by the Etherscan V2 API |
 
 ### Raw API Access
 
-The `raw` command gives you direct access to the entire Etherscan API surface. Pass any module, action, and key=value parameters:
+The `raw` command gives you direct access to the entire Etherscan API surface, including endpoints not yet covered by dedicated commands:
 
 ```bash
 xplorer raw <module> <action> [--param key=value]... [--compact]
 ```
 
-Output defaults to pretty-printed JSON (the `result` field from the Etherscan response). Use `--compact` for single-line JSON, useful for piping.
+Output defaults to pretty-printed JSON. Use `--compact` for single-line output, useful for piping.
 
 ```bash
-# Get account balance
-xplorer --chain-id 1 raw account balance --param address=0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe --param tag=latest
-
-# Get token supply (compact output for piping)
-xplorer --chain-id 1 raw stats tokensupply --param contractaddress=0xdAC17F958D2ee523a2206206994597C13D831ec7 --compact
+# Get token supply
+xplorer --chain-id 1 raw stats tokensupply \
+  --param contractaddress=0xdAC17F958D2ee523a2206206994597C13D831ec7 --compact
 
 # Get transaction list and pipe to jq
-xplorer --chain-id 1 raw account txlist --param address=0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe --param startblock=0 --param endblock=99999999 --compact | jq '.[0]'
-
-# Get contract ABI (equivalent to `contract getabi --raw`)
-xplorer --chain-id 1 raw contract getabi --param address=0xdAC17F958D2ee523a2206206994597C13D831ec7
+xplorer --chain-id 1 raw account txlist \
+  --param address=0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe \
+  --param startblock=0 --compact | jq '.[0]'
 ```
 
-See all available modules and actions at [docs.etherscan.io](https://docs.etherscan.io/etherscan-v2).
-
-### Supported Chains
+## Supported Chains
 
 xplorer uses the Etherscan V2 API, which supports 60+ chains through a single endpoint. Pass any valid chain ID:
 
@@ -107,7 +173,7 @@ xplorer uses the Etherscan V2 API, which supports 60+ chains through a single en
 | Scroll   | 534352   |
 | zkSync   | 324      |
 
-See the full list at [docs.etherscan.io](https://docs.etherscan.io/etherscan-v2).
+Run `xplorer chainlist` for the full list, or see the [Etherscan V2 docs](https://docs.etherscan.io/etherscan-v2).
 
 ## Developers
 
@@ -134,7 +200,7 @@ cargo install --path .
 ```bash
 cargo build --release
 ./target/release/xplorer --help
-./target/release/xplorer --chain-id 1 contract getabi 0xdAC17F958D2ee523a2206206994597C13D831ec7
+./target/release/xplorer --chain-id 1 account balance 0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe
 ```
 
 ### Running Tests
