@@ -26,9 +26,7 @@ fn format_number_with_commas(n: u64) -> String {
 }
 
 pub async fn format_api_limit(client: &EtherscanClient) -> Result<String, XplorerError> {
-    let response = client
-        .call_api("getapilimit", "getapilimit", &[])
-        .await?;
+    let response = client.call_api("getapilimit", "getapilimit", &[]).await?;
 
     let status = response["status"].as_str().unwrap_or("0");
     if status == "0" {
@@ -86,7 +84,8 @@ mod tests {
             ]))
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(r#"{
+            .with_body(
+                r#"{
                 "status": "1",
                 "message": "OK",
                 "result": {
@@ -96,7 +95,8 @@ mod tests {
                     "limitInterval": "daily",
                     "intervalExpiryTimespan": "08:42:34"
                 }
-            }"#)
+            }"#,
+            )
             .create_async()
             .await;
 

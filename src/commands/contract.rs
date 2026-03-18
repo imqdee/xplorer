@@ -22,7 +22,8 @@ pub async fn get_source_code(
     raw: bool,
 ) -> Result<(), XplorerError> {
     if raw {
-        super::print_raw_response(client, "contract", "getsourcecode", &[("address", address)]).await
+        super::print_raw_response(client, "contract", "getsourcecode", &[("address", address)])
+            .await
     } else {
         let formatted = handlers::contract::format_source_code(client, address).await?;
         print!("{formatted}");
@@ -57,8 +58,7 @@ pub async fn check_verify_status(
     raw: bool,
 ) -> Result<(), XplorerError> {
     if raw {
-        super::print_raw_response(client, "contract", "checkverifystatus", &[("guid", guid)])
-            .await
+        super::print_raw_response(client, "contract", "checkverifystatus", &[("guid", guid)]).await
     } else {
         let formatted = handlers::contract::format_verify_status(client, guid).await?;
         print!("{formatted}");
@@ -80,8 +80,7 @@ pub async fn check_proxy_verification(
         )
         .await
     } else {
-        let formatted =
-            handlers::contract::format_proxy_verification_status(client, guid).await?;
+        let formatted = handlers::contract::format_proxy_verification_status(client, guid).await?;
         print!("{formatted}");
         Ok(())
     }
@@ -106,9 +105,13 @@ mod tests {
 
         let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
-        let result =
-            crate::commands::print_raw_response(&client, "contract", "getabi", &[("address", "0x123")])
-                .await;
+        let result = crate::commands::print_raw_response(
+            &client,
+            "contract",
+            "getabi",
+            &[("address", "0x123")],
+        )
+        .await;
         mock.assert_async().await;
 
         assert!(result.is_ok());

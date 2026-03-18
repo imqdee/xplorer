@@ -81,7 +81,9 @@ pub async fn format_source_code(
     output.push_str(&format!("// Contract Name  : {}\n", entry.contract_name));
     output.push_str(&format!(
         "// Chain ID       : {}\n",
-        client.chain_id().map_or("N/A".to_string(), |id| id.to_string())
+        client
+            .chain_id()
+            .map_or("N/A".to_string(), |id| id.to_string())
     ));
     output.push_str(&format!("// Compiler       : {}\n", entry.compiler_version));
     output.push_str(&format!("// EVM Version    : {}\n", entry.evm_version));

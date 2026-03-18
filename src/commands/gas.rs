@@ -18,8 +18,13 @@ pub async fn gas_estimate(
     raw: bool,
 ) -> Result<(), XplorerError> {
     if raw {
-        super::print_raw_response(client, "gastracker", "gasestimate", &[("gasprice", gasprice)])
-            .await
+        super::print_raw_response(
+            client,
+            "gastracker",
+            "gasestimate",
+            &[("gasprice", gasprice)],
+        )
+        .await
     } else {
         let formatted = handlers::gas::format_gas_estimate(client, gasprice).await?;
         print!("{formatted}");

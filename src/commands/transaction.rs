@@ -30,8 +30,7 @@ pub async fn get_tx_receipt_status(
         )
         .await
     } else {
-        let formatted =
-            handlers::transaction::format_tx_receipt_status(client, txhash).await?;
+        let formatted = handlers::transaction::format_tx_receipt_status(client, txhash).await?;
         print!("{formatted}");
         Ok(())
     }

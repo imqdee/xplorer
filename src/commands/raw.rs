@@ -12,9 +12,7 @@ pub async fn execute(
         .iter()
         .map(|p| {
             p.split_once('=').ok_or_else(|| {
-                XplorerError::Api(format!(
-                    "Invalid param format '{p}': expected key=value"
-                ))
+                XplorerError::Api(format!("Invalid param format '{p}': expected key=value"))
             })
         })
         .collect::<Result<Vec<_>, _>>()?;
@@ -70,10 +68,7 @@ mod tests {
 
         let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
-        let params = vec![
-            "address=0x123".to_string(),
-            "tag=latest".to_string(),
-        ];
+        let params = vec!["address=0x123".to_string(), "tag=latest".to_string()];
         let result = execute(&client, "account", "balance", &params, false).await;
         assert!(result.is_ok());
     }

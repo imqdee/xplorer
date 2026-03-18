@@ -17,9 +17,7 @@ pub struct GasOracle {
 }
 
 pub async fn format_gas_oracle(client: &EtherscanClient) -> Result<String, XplorerError> {
-    let response = client
-        .call_api("gastracker", "gasoracle", &[])
-        .await?;
+    let response = client.call_api("gastracker", "gasoracle", &[]).await?;
 
     let status = response["status"].as_str().unwrap_or("0");
     if status == "0" {
@@ -74,7 +72,8 @@ mod tests {
             ]))
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(r#"{
+            .with_body(
+                r#"{
                 "status": "1",
                 "message": "OK",
                 "result": {
@@ -85,7 +84,8 @@ mod tests {
                     "suggestBaseFee": "0.496",
                     "gasUsedRatio": "0.3,0.5,0.2"
                 }
-            }"#)
+            }"#,
+            )
             .create_async()
             .await;
 
