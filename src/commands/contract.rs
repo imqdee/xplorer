@@ -51,6 +51,21 @@ pub async fn get_contract_creation(
     }
 }
 
+pub async fn check_verify_status(
+    client: &EtherscanClient,
+    guid: &str,
+    raw: bool,
+) -> Result<(), XplorerError> {
+    if raw {
+        super::print_raw_response(client, "contract", "checkverifystatus", &[("guid", guid)])
+            .await
+    } else {
+        let formatted = handlers::contract::format_verify_status(client, guid).await?;
+        print!("{formatted}");
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

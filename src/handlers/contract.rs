@@ -165,6 +165,24 @@ pub async fn format_contract_creation(
     Ok(output)
 }
 
+pub async fn format_verify_status(
+    client: &EtherscanClient,
+    guid: &str,
+) -> Result<String, XplorerError> {
+    let response = client
+        .call_api("contract", "checkverifystatus", &[("guid", guid)])
+        .await?;
+
+    let status = response["status"].as_str().unwrap_or("0");
+    if status == "0" {
+        let message = response["result"].as_str().unwrap_or("Unknown API error");
+        return Err(XplorerError::Api(message.to_string()));
+    }
+
+    let result = response["result"].as_str().unwrap_or("Unknown");
+    Ok(format!("Status : {result}\n"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -381,5 +399,50 @@ mod tests {
         assert!(result.contains("Tx Hash  : 0xdef"));
         assert!(!result.contains("Block    :"));
         assert!(!result.contains("Time     :"));
+    }
+
+    #[tokio::test]
+    async fn test_format_verify_status_success() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("module".into(), "contract".into()),
+                mockito::Matcher::UrlEncoded("action".into(), "checkverifystatus".into()),
+                mockito::Matcher::UrlEncoded("guid".into(), "abc123".into()),
+            ]))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"status":"1","message":"OK","result":"Pass - Verified"}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
+
+        let result = format_verify_status(&client, "abc123").await.unwrap();
+        mock.assert_async().await;
+
+        assert_eq!(result, "Status : Pass - Verified\n");
+    }
+
+    #[tokio::test]
+    async fn test_format_verify_status_pending() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"status":"0","message":"NOTOK","result":"Pending in queue"}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
+
+        let result = format_verify_status(&client, "abc123").await;
+        mock.assert_async().await;
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Pending in queue"));
     }
 }
