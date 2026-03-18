@@ -169,4 +169,46 @@ mod tests {
 
         assert!(result.contains("Receipt  : Failed"));
     }
+
+    #[tokio::test]
+    async fn test_format_tx_status_api_error() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"status":"0","message":"NOTOK","result":"Invalid tx hash"}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
+
+        let result = format_tx_status(&client, "0xbad").await;
+        mock.assert_async().await;
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid tx hash"));
+    }
+
+    #[tokio::test]
+    async fn test_format_tx_receipt_status_api_error() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"status":"0","message":"NOTOK","result":"Invalid tx hash"}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
+
+        let result = format_tx_receipt_status(&client, "0xbad").await;
+        mock.assert_async().await;
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid tx hash"));
+    }
 }

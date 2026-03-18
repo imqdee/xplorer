@@ -111,4 +111,25 @@ mod tests {
         assert!(result.contains("Interval           : daily"));
         assert!(result.contains("Resets In          : 08:42:34"));
     }
+
+    #[tokio::test]
+    async fn test_format_api_limit_error() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"status":"0","message":"NOTOK","result":"Invalid API Key"}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), None, server.url());
+
+        let result = format_api_limit(&client).await;
+        mock.assert_async().await;
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid API Key"));
+    }
 }

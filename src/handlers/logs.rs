@@ -11,7 +11,8 @@ pub struct LogEntry {
     pub topics: Vec<String>,
     pub data: String,
     pub block_number: String,
-    pub time_stamp: String,
+    #[serde(rename = "timeStamp")]
+    pub timestamp: String,
     pub gas_price: String,
     pub gas_used: String,
     pub log_index: String,
@@ -26,7 +27,8 @@ fn hex_to_u64(hex: &str) -> Option<u64> {
 
 fn format_timestamp(hex: &str) -> String {
     hex_to_u64(hex)
-        .and_then(|ts| DateTime::from_timestamp(ts as i64, 0))
+        .and_then(|ts| i64::try_from(ts).ok())
+        .and_then(|ts| DateTime::from_timestamp(ts, 0))
         .map(|dt| dt.format("%Y-%m-%d %H:%M:%S UTC").to_string())
         .unwrap_or_else(|| hex.to_string())
 }
@@ -57,7 +59,7 @@ pub async fn format_logs(
         ));
         output.push_str(&format!(
             "Time     : {}\n",
-            format_timestamp(&entry.time_stamp)
+            format_timestamp(&entry.timestamp)
         ));
         output.push_str(&format!("Address  : {}\n", entry.address));
 
@@ -217,5 +219,27 @@ mod tests {
         assert!(result.contains("0xtx2"));
         let newlines = result.matches("\n\n").count();
         assert_eq!(newlines, 1);
+    }
+
+    #[tokio::test]
+    async fn test_format_logs_error() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"status":"0","message":"NOTOK","result":"No records found"}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
+
+        let params = [("fromBlock", "0"), ("toBlock", "1")];
+        let result = format_logs(&client, &params).await;
+        mock.assert_async().await;
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("No records found"));
     }
 }

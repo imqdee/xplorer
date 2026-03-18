@@ -20,6 +20,13 @@ fn status_label(status: u8) -> &'static str {
 }
 
 pub fn format_chainlist(response: &serde_json::Value) -> Result<String, XplorerError> {
+    if !response["result"].is_array() {
+        return Err(XplorerError::Api(format!(
+            "Unexpected chainlist response: {}",
+            serde_json::to_string(response).unwrap_or_else(|_| "unparseable".into())
+        )));
+    }
+
     let entries: Vec<ChainEntry> = serde_json::from_value(response["result"].clone())
         .map_err(|e| XplorerError::Api(format!("Failed to parse chainlist response: {e}")))?;
 
@@ -75,6 +82,20 @@ mod tests {
         assert!(result.contains("OK"));
         assert!(result.contains("https://etherscan.io"));
         assert!(result.contains("8453"));
+    }
+
+    #[test]
+    fn test_format_chainlist_unexpected_response() {
+        let response = serde_json::json!({"error": "server error"});
+
+        let result = format_chainlist(&response);
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Unexpected chainlist response")
+        );
     }
 
     #[test]

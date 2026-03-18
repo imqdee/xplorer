@@ -42,7 +42,10 @@ mod tests {
         let mut server = mockito::Server::new_async().await;
         let _mock = server
             .mock("GET", "/")
-            .match_query(mockito::Matcher::Any)
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("module".into(), "gastracker".into()),
+                mockito::Matcher::UrlEncoded("action".into(), "gasoracle".into()),
+            ]))
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(r#"{"status":"1","message":"OK","result":{"LastBlock":"1"}}"#)

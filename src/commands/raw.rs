@@ -21,13 +21,8 @@ pub async fn execute(
 
     let status = response["status"].as_str().unwrap_or("0");
     if status == "0" {
-        let error_json = serde_json::json!({
-            "status": status,
-            "message": response["result"].as_str().unwrap_or("Unknown error"),
-            "result": response["result"]
-        });
-        println!("{}", serde_json::to_string(&error_json).unwrap());
-        std::process::exit(1);
+        let message = response["result"].as_str().unwrap_or("Unknown error");
+        return Err(XplorerError::Api(message.to_string()));
     }
 
     let result = &response["result"];

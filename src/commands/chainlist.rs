@@ -7,8 +7,8 @@ pub async fn chainlist(client: &EtherscanClient, raw: bool) -> Result<(), Xplore
     let response = client.fetch_url(&url).await?;
 
     if raw {
-        let output = serde_json::to_string(&response)
-            .map_err(|e| XplorerError::Api(format!("Failed to serialize response: {e}")))?;
+        let output = serde_json::to_string(&response["result"])
+            .map_err(|e| XplorerError::Api(format!("Failed to serialize result: {e}")))?;
         println!("{output}");
     } else {
         let formatted = handlers::chainlist::format_chainlist(&response)?;

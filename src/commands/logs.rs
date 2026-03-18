@@ -65,7 +65,12 @@ mod tests {
         let mut server = mockito::Server::new_async().await;
         let _mock = server
             .mock("GET", "/")
-            .match_query(mockito::Matcher::Any)
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("module".into(), "logs".into()),
+                mockito::Matcher::UrlEncoded("action".into(), "getLogs".into()),
+                mockito::Matcher::UrlEncoded("fromBlock".into(), "12878196".into()),
+                mockito::Matcher::UrlEncoded("toBlock".into(), "12878300".into()),
+            ]))
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(r#"{"status":"1","message":"OK","result":[]}"#)

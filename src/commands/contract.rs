@@ -118,6 +118,38 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_print_raw_response_error() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"status":"0","message":"NOTOK","result":"Contract not verified"}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
+
+        let result = crate::commands::print_raw_response(
+            &client,
+            "contract",
+            "getabi",
+            &[("address", "0x123")],
+        )
+        .await;
+        mock.assert_async().await;
+
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Contract not verified")
+        );
+    }
+
+    #[tokio::test]
     async fn test_get_abi_raw_vs_formatted() {
         let mut server = mockito::Server::new_async().await;
 

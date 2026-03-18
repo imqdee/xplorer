@@ -52,7 +52,9 @@ pub async fn format_gas_estimate(
         return Err(XplorerError::Api(message.to_string()));
     }
 
-    let seconds = response["result"].as_str().unwrap_or("Unknown");
+    let seconds = response["result"]
+        .as_str()
+        .ok_or_else(|| XplorerError::Api("Expected string result for gas estimate".into()))?;
     Ok(format!("Estimated confirmation : {seconds}s\n"))
 }
 
@@ -123,5 +125,52 @@ mod tests {
         mock.assert_async().await;
 
         assert_eq!(result, "Estimated confirmation : 45s\n");
+    }
+
+    #[tokio::test]
+    async fn test_format_gas_oracle_error() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"status":"0","message":"NOTOK","result":"Invalid API Key"}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
+
+        let result = format_gas_oracle(&client).await;
+        mock.assert_async().await;
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid API Key"));
+    }
+
+    #[tokio::test]
+    async fn test_format_gas_estimate_error() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"status":"0","message":"NOTOK","result":"Invalid gas price"}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
+
+        let result = format_gas_estimate(&client, "0").await;
+        mock.assert_async().await;
+
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Invalid gas price")
+        );
     }
 }
