@@ -115,6 +115,14 @@ enum GasAction {
         #[arg(long)]
         raw: bool,
     },
+    /// Get estimated confirmation time for a given gas price
+    Gasestimate {
+        /// Gas price in wei
+        gasprice: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -267,6 +275,9 @@ async fn run() -> Result<(), XplorerError> {
 
             match action {
                 GasAction::Gasoracle { raw } => commands::gas::gas_oracle(&client, raw).await,
+                GasAction::Gasestimate { gasprice, raw } => {
+                    commands::gas::gas_estimate(&client, &gasprice, raw).await
+                }
             }
         }
         Commands::Logs { action } => {

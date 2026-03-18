@@ -12,6 +12,21 @@ pub async fn gas_oracle(client: &EtherscanClient, raw: bool) -> Result<(), Xplor
     }
 }
 
+pub async fn gas_estimate(
+    client: &EtherscanClient,
+    gasprice: &str,
+    raw: bool,
+) -> Result<(), XplorerError> {
+    if raw {
+        super::print_raw_response(client, "gastracker", "gasestimate", &[("gasprice", gasprice)])
+            .await
+    } else {
+        let formatted = handlers::gas::format_gas_estimate(client, gasprice).await?;
+        print!("{formatted}");
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

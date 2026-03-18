@@ -40,6 +40,24 @@ pub async fn format_gas_oracle(client: &EtherscanClient) -> Result<String, Xplor
     Ok(output)
 }
 
+pub async fn format_gas_estimate(
+    client: &EtherscanClient,
+    gasprice: &str,
+) -> Result<String, XplorerError> {
+    let response = client
+        .call_api("gastracker", "gasestimate", &[("gasprice", gasprice)])
+        .await?;
+
+    let status = response["status"].as_str().unwrap_or("0");
+    if status == "0" {
+        let message = response["result"].as_str().unwrap_or("Unknown API error");
+        return Err(XplorerError::Api(message.to_string()));
+    }
+
+    let seconds = response["result"].as_str().unwrap_or("Unknown");
+    Ok(format!("Estimated confirmation : {seconds}s\n"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -81,5 +99,29 @@ mod tests {
         assert!(result.contains("Standard   : 0.496 Gwei"));
         assert!(result.contains("Fast       : 0.554 Gwei"));
         assert!(result.contains("Base Fee   : 0.496 Gwei"));
+    }
+
+    #[tokio::test]
+    async fn test_format_gas_estimate_success() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("module".into(), "gastracker".into()),
+                mockito::Matcher::UrlEncoded("action".into(), "gasestimate".into()),
+                mockito::Matcher::UrlEncoded("gasprice".into(), "2000000000".into()),
+            ]))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"status":"1","message":"OK","result":"45"}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
+
+        let result = format_gas_estimate(&client, "2000000000").await.unwrap();
+        mock.assert_async().await;
+
+        assert_eq!(result, "Estimated confirmation : 45s\n");
     }
 }
