@@ -40,12 +40,18 @@ enum Commands {
     /// Query event logs from Etherscan
     Logs {
         #[command(subcommand)]
-        action: LogsAction,
+        action: Box<LogsAction>,
     },
     /// Query transaction status from Etherscan
     Transaction {
         #[command(subcommand)]
         action: TransactionAction,
+    },
+    /// Check API credit usage and limits
+    Apilimit {
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
     },
     /// List all chains supported by Etherscan
     Chainlist {
@@ -292,7 +298,7 @@ async fn run() -> Result<(), XplorerError> {
             let chain_id = resolve_chain_id(cli.chain_id)?;
             let client = client::EtherscanClient::new(api_key, Some(chain_id));
 
-            match action {
+            match *action {
                 LogsAction::Getlogs {
                     from_block,
                     to_block,
@@ -348,6 +354,13 @@ async fn run() -> Result<(), XplorerError> {
                     commands::transaction::get_tx_receipt_status(&client, &txhash, raw).await
                 }
             }
+        }
+        Commands::Apilimit { raw } => {
+            let cfg = config::Config::load();
+            let api_key = cfg.require_api_key()?.to_string();
+            let client = client::EtherscanClient::new(api_key, None);
+
+            commands::apilimit::apilimit(&client, raw).await
         }
         Commands::Chainlist { raw } => {
             let client = client::EtherscanClient::new_minimal();
