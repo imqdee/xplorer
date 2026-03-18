@@ -32,6 +32,11 @@ enum Commands {
         #[command(subcommand)]
         action: ConfigAction,
     },
+    /// Query gas tracker data from Etherscan
+    Gas {
+        #[command(subcommand)]
+        action: GasAction,
+    },
     /// Query event logs from Etherscan
     Logs {
         #[command(subcommand)]
@@ -96,6 +101,16 @@ enum ContractAction {
     Checkproxyverification {
         /// GUID from proxy verification submission
         guid: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+}
+
+#[derive(Subcommand)]
+enum GasAction {
+    /// Get current safe, standard, and fast gas prices
+    Gasoracle {
         /// Output raw JSON result field
         #[arg(long)]
         raw: bool,
@@ -242,6 +257,16 @@ async fn run() -> Result<(), XplorerError> {
                 ContractAction::Checkproxyverification { guid, raw } => {
                     commands::contract::check_proxy_verification(&client, &guid, raw).await
                 }
+            }
+        }
+        Commands::Gas { action } => {
+            let cfg = config::Config::load();
+            let api_key = cfg.require_api_key()?.to_string();
+            let chain_id = resolve_chain_id(cli.chain_id)?;
+            let client = client::EtherscanClient::new(api_key, Some(chain_id));
+
+            match action {
+                GasAction::Gasoracle { raw } => commands::gas::gas_oracle(&client, raw).await,
             }
         }
         Commands::Logs { action } => {
