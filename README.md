@@ -53,7 +53,7 @@ xplorer --chain-id 1 account balance 0xde0B2...9BAe --raw | jq .
 
 ## Supported Endpoints
 
-xplorer covers 59 read-only endpoints across 9 modules. Endpoints marked **[Pro]** require an [Etherscan Pro](https://docs.etherscan.io/getting-started/endpoint-urls#pro-api) API key.
+xplorer covers 72 read-only endpoints across 10 modules. Endpoints marked **[Pro]** require an [Etherscan Pro](https://docs.etherscan.io/getting-started/endpoint-urls#pro-api) API key.
 
 ### Account
 
@@ -150,6 +150,28 @@ Date-range endpoints accept `--startdate` and `--enddate` in `yyyy-MM-dd` format
 | `logs getlogs --from-block <n> --to-block <n>` | Get event logs by address and/or topics |
 
 Supports filtering by `--address`, `--topic0` through `--topic3`, and topic operators (`--topic0-1-opr`, etc.).
+
+### Proxy (JSON-RPC)
+
+Low-level Ethereum node queries via the Etherscan JSON-RPC proxy. All endpoints are free tier.
+
+| Command | Description |
+|---------|-------------|
+| `proxy eth-block-number` | Get most recent block number |
+| `proxy eth-get-block-by-number --tag <tag>` | Get block by number |
+| `proxy eth-get-block-transaction-count-by-number --tag <tag>` | Get transaction count in a block |
+| `proxy eth-get-uncle-by-block-number-and-index --tag <tag> --index <i>` | Get uncle block by block number and index |
+| `proxy eth-get-transaction-by-hash --txhash <hash>` | Get transaction by hash |
+| `proxy eth-get-transaction-by-block-number-and-index --tag <tag> --index <i>` | Get transaction by block number and index |
+| `proxy eth-get-transaction-count --address <addr>` | Get transaction count (nonce) for an address |
+| `proxy eth-get-transaction-receipt --txhash <hash>` | Get transaction receipt |
+| `proxy eth-call --to <addr> --data <data>` | Execute a read-only call |
+| `proxy eth-get-code --address <addr>` | Get contract code at an address |
+| `proxy eth-get-storage-at --address <addr> --position <pos>` | Get storage value at a position |
+| `proxy eth-gas-price` | Get current gas price |
+| `proxy eth-estimate-gas --to <addr> --data <data>` | Estimate gas for a transaction |
+
+Block tag parameters accept hex block numbers or `latest`, `earliest`, `pending`. Default is `latest`.
 
 ### Transaction
 

@@ -6,6 +6,7 @@ pub mod contract;
 pub mod fmt;
 pub mod gas;
 pub mod logs;
+pub mod proxy;
 pub mod stats;
 pub mod token;
 pub mod transaction;

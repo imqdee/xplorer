@@ -53,6 +53,11 @@ enum Commands {
         #[command(subcommand)]
         action: Box<LogsAction>,
     },
+    /// Query Ethereum node data via JSON-RPC proxy
+    Proxy {
+        #[command(subcommand)]
+        action: ProxyAction,
+    },
     /// Query network statistics from Etherscan
     Stats {
         #[command(subcommand)]
@@ -599,6 +604,177 @@ enum BlockAction {
         /// Closest block: before or after (default: before)
         #[arg(long, default_value = "before")]
         closest: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+}
+
+#[derive(Subcommand)]
+#[allow(clippy::enum_variant_names)]
+enum ProxyAction {
+    /// Get most recent block number
+    #[command(name = "eth-block-number")]
+    EthBlockNumber {
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get block by number
+    #[command(name = "eth-get-block-by-number")]
+    EthGetBlockByNumber {
+        /// Block tag (hex number or "latest", "earliest", "pending")
+        #[arg(long, default_value = "latest")]
+        tag: String,
+        /// Show full transaction objects (true/false)
+        #[arg(long, default_value = "true")]
+        boolean: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get transaction count in a block
+    #[command(name = "eth-get-block-transaction-count-by-number")]
+    EthGetBlockTransactionCountByNumber {
+        /// Block tag (hex number or "latest")
+        #[arg(long, default_value = "latest")]
+        tag: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get uncle block by block number and index
+    #[command(name = "eth-get-uncle-by-block-number-and-index")]
+    EthGetUncleByBlockNumberAndIndex {
+        /// Block tag (hex number or "latest")
+        #[arg(long)]
+        tag: String,
+        /// Uncle index (hex)
+        #[arg(long)]
+        index: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get transaction by hash
+    #[command(name = "eth-get-transaction-by-hash")]
+    EthGetTransactionByHash {
+        /// Transaction hash
+        #[arg(long)]
+        txhash: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get transaction by block number and index
+    #[command(name = "eth-get-transaction-by-block-number-and-index")]
+    EthGetTransactionByBlockNumberAndIndex {
+        /// Block tag (hex number or "latest")
+        #[arg(long)]
+        tag: String,
+        /// Transaction index (hex)
+        #[arg(long)]
+        index: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get transaction count (nonce) for an address
+    #[command(name = "eth-get-transaction-count")]
+    EthGetTransactionCount {
+        /// Address
+        #[arg(long)]
+        address: String,
+        /// Block tag (hex number or "latest")
+        #[arg(long, default_value = "latest")]
+        tag: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get transaction receipt
+    #[command(name = "eth-get-transaction-receipt")]
+    EthGetTransactionReceipt {
+        /// Transaction hash
+        #[arg(long)]
+        txhash: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Execute a read-only call
+    #[command(name = "eth-call")]
+    EthCall {
+        /// Contract address
+        #[arg(long)]
+        to: String,
+        /// Encoded function call data
+        #[arg(long)]
+        data: String,
+        /// Block tag (hex number or "latest")
+        #[arg(long, default_value = "latest")]
+        tag: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get contract code at an address
+    #[command(name = "eth-get-code")]
+    EthGetCode {
+        /// Contract address
+        #[arg(long)]
+        address: String,
+        /// Block tag (hex number or "latest")
+        #[arg(long, default_value = "latest")]
+        tag: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get storage value at a position
+    #[command(name = "eth-get-storage-at")]
+    EthGetStorageAt {
+        /// Contract address
+        #[arg(long)]
+        address: String,
+        /// Storage position (hex)
+        #[arg(long)]
+        position: String,
+        /// Block tag (hex number or "latest")
+        #[arg(long, default_value = "latest")]
+        tag: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get current gas price
+    #[command(name = "eth-gas-price")]
+    EthGasPrice {
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Estimate gas for a transaction
+    #[command(name = "eth-estimate-gas")]
+    EthEstimateGas {
+        /// Destination address
+        #[arg(long)]
+        to: String,
+        /// Encoded function call data
+        #[arg(long)]
+        data: String,
+        /// Value to send (hex, optional)
+        #[arg(long)]
+        value: Option<String>,
+        /// Gas limit (hex, optional)
+        #[arg(long)]
+        gas: Option<String>,
+        /// Gas price (hex, optional)
+        #[arg(long)]
+        gasprice: Option<String>,
+        /// Block tag (hex number or "latest")
+        #[arg(long, default_value = "latest")]
+        tag: String,
         /// Output raw JSON result field
         #[arg(long)]
         raw: bool,
@@ -1389,6 +1565,78 @@ async fn run() -> Result<(), XplorerError> {
                     closest,
                     raw,
                 } => commands::block::getblocknobytime(&client, &timestamp, &closest, raw).await,
+            }
+        }
+        Commands::Proxy { action } => {
+            let cfg = config::Config::load();
+            let api_key = cfg.require_api_key()?.to_string();
+            let chain_id = resolve_chain_id(cli.chain_id)?;
+            let client = client::EtherscanClient::new(api_key, Some(chain_id));
+
+            match action {
+                ProxyAction::EthBlockNumber { raw } => {
+                    commands::proxy::eth_block_number(&client, raw).await
+                }
+                ProxyAction::EthGetBlockByNumber { tag, boolean, raw } => {
+                    commands::proxy::eth_get_block_by_number(&client, &tag, &boolean, raw).await
+                }
+                ProxyAction::EthGetBlockTransactionCountByNumber { tag, raw } => {
+                    commands::proxy::eth_get_block_transaction_count_by_number(&client, &tag, raw)
+                        .await
+                }
+                ProxyAction::EthGetUncleByBlockNumberAndIndex { tag, index, raw } => {
+                    commands::proxy::eth_get_uncle_by_block_number_and_index(
+                        &client, &tag, &index, raw,
+                    )
+                    .await
+                }
+                ProxyAction::EthGetTransactionByHash { txhash, raw } => {
+                    commands::proxy::eth_get_transaction_by_hash(&client, &txhash, raw).await
+                }
+                ProxyAction::EthGetTransactionByBlockNumberAndIndex { tag, index, raw } => {
+                    commands::proxy::eth_get_transaction_by_block_number_and_index(
+                        &client, &tag, &index, raw,
+                    )
+                    .await
+                }
+                ProxyAction::EthGetTransactionCount { address, tag, raw } => {
+                    commands::proxy::eth_get_transaction_count(&client, &address, &tag, raw).await
+                }
+                ProxyAction::EthGetTransactionReceipt { txhash, raw } => {
+                    commands::proxy::eth_get_transaction_receipt(&client, &txhash, raw).await
+                }
+                ProxyAction::EthCall { to, data, tag, raw } => {
+                    commands::proxy::eth_call(&client, &to, &data, &tag, raw).await
+                }
+                ProxyAction::EthGetCode { address, tag, raw } => {
+                    commands::proxy::eth_get_code(&client, &address, &tag, raw).await
+                }
+                ProxyAction::EthGetStorageAt {
+                    address,
+                    position,
+                    tag,
+                    raw,
+                } => {
+                    commands::proxy::eth_get_storage_at(&client, &address, &position, &tag, raw)
+                        .await
+                }
+                ProxyAction::EthGasPrice { raw } => {
+                    commands::proxy::eth_gas_price(&client, raw).await
+                }
+                ProxyAction::EthEstimateGas {
+                    to,
+                    data,
+                    value,
+                    gas,
+                    gasprice,
+                    tag,
+                    raw,
+                } => {
+                    commands::proxy::eth_estimate_gas(
+                        &client, &to, &data, &value, &gas, &gasprice, &tag, raw,
+                    )
+                    .await
+                }
             }
         }
         Commands::Stats { action } => {

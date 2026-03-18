@@ -6,6 +6,7 @@ pub mod config;
 pub mod contract;
 pub mod gas;
 pub mod logs;
+pub mod proxy;
 pub mod raw;
 pub mod stats;
 pub mod token;
