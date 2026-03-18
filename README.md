@@ -53,7 +53,7 @@ xplorer --chain-id 1 account balance 0xde0B2...9BAe --raw | jq .
 
 ## Supported Endpoints
 
-xplorer covers 37 read-only endpoints across 8 modules. Endpoints marked **[Pro]** require an [Etherscan Pro](https://docs.etherscan.io/getting-started/endpoint-urls#pro-api) API key.
+xplorer covers 45 read-only endpoints across 9 modules. Endpoints marked **[Pro]** require an [Etherscan Pro](https://docs.etherscan.io/getting-started/endpoint-urls#pro-api) API key.
 
 ### Account
 
@@ -106,6 +106,21 @@ Transaction list commands (`txlist`, `txlistinternal`, `tokentx`, `tokennfttx`, 
 | `block getblockreward <blockno>` | Get block reward and uncle details |
 | `block getblockcountdown <blockno>` | Get estimated countdown to a future block |
 | `block getblocknobytime <timestamp>` | Find the block closest to a given unix timestamp |
+
+### Stats
+
+All stats endpoints are **[Pro]** and accept `--startdate` and `--enddate` in `yyyy-MM-dd` format, and `--sort` (asc/desc).
+
+| Command | Description |
+|---------|-------------|
+| `stats dailyavgblocksize --startdate <d> --enddate <d>` | Get daily average block size |
+| `stats dailyblkcount --startdate <d> --enddate <d>` | Get daily block count and rewards |
+| `stats dailyblockrewards --startdate <d> --enddate <d>` | Get daily block rewards |
+| `stats dailyavgblocktime --startdate <d> --enddate <d>` | Get daily average block time |
+| `stats dailyuncleblkcount --startdate <d> --enddate <d>` | Get daily uncle block count and rewards |
+| `stats dailyavggaslimit --startdate <d> --enddate <d>` | Get daily average gas limit |
+| `stats dailyavggasprice --startdate <d> --enddate <d>` | Get daily average gas price |
+| `stats dailygasused --startdate <d> --enddate <d>` | Get daily total gas used |
 
 ### Gas Tracker
 

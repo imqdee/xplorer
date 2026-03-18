@@ -7,6 +7,7 @@ pub mod contract;
 pub mod gas;
 pub mod logs;
 pub mod raw;
+pub mod stats;
 pub mod token;
 pub mod transaction;
 

@@ -53,6 +53,11 @@ enum Commands {
         #[command(subcommand)]
         action: Box<LogsAction>,
     },
+    /// Query daily network statistics from Etherscan [Pro]
+    Stats {
+        #[command(subcommand)]
+        action: StatsAction,
+    },
     /// Query token data from Etherscan
     Token {
         #[command(subcommand)]
@@ -601,6 +606,130 @@ enum BlockAction {
 }
 
 #[derive(Subcommand)]
+enum StatsAction {
+    /// Get daily average block size [Pro]
+    Dailyavgblocksize {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get daily block count and rewards [Pro]
+    Dailyblkcount {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get daily block rewards [Pro]
+    Dailyblockrewards {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get daily average block time [Pro]
+    Dailyavgblocktime {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get daily uncle block count and rewards [Pro]
+    Dailyuncleblkcount {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get daily average gas limit [Pro]
+    Dailyavggaslimit {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get daily average gas price [Pro]
+    Dailyavggasprice {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get daily total gas used [Pro]
+    Dailygasused {
+        /// Start date (yyyy-MM-dd)
+        #[arg(long)]
+        startdate: String,
+        /// End date (yyyy-MM-dd)
+        #[arg(long)]
+        enddate: String,
+        /// Sort order (asc/desc)
+        #[arg(long, default_value = "asc")]
+        sort: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+}
+
+#[derive(Subcommand)]
 enum TokenAction {
     /// Get token info by contract address
     Tokeninfo {
@@ -1089,6 +1218,83 @@ async fn run() -> Result<(), XplorerError> {
                     closest,
                     raw,
                 } => commands::block::getblocknobytime(&client, &timestamp, &closest, raw).await,
+            }
+        }
+        Commands::Stats { action } => {
+            let cfg = config::Config::load();
+            let api_key = cfg.require_api_key()?.to_string();
+            let chain_id = resolve_chain_id(cli.chain_id)?;
+            let client = client::EtherscanClient::new(api_key, Some(chain_id));
+
+            match action {
+                StatsAction::Dailyavgblocksize {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => {
+                    commands::stats::dailyavgblocksize(&client, &startdate, &enddate, &sort, raw)
+                        .await
+                }
+                StatsAction::Dailyblkcount {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => {
+                    commands::stats::dailyblkcount(&client, &startdate, &enddate, &sort, raw).await
+                }
+                StatsAction::Dailyblockrewards {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => {
+                    commands::stats::dailyblockrewards(&client, &startdate, &enddate, &sort, raw)
+                        .await
+                }
+                StatsAction::Dailyavgblocktime {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => {
+                    commands::stats::dailyavgblocktime(&client, &startdate, &enddate, &sort, raw)
+                        .await
+                }
+                StatsAction::Dailyuncleblkcount {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => {
+                    commands::stats::dailyuncleblkcount(&client, &startdate, &enddate, &sort, raw)
+                        .await
+                }
+                StatsAction::Dailyavggaslimit {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => {
+                    commands::stats::dailyavggaslimit(&client, &startdate, &enddate, &sort, raw)
+                        .await
+                }
+                StatsAction::Dailyavggasprice {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => {
+                    commands::stats::dailyavggasprice(&client, &startdate, &enddate, &sort, raw)
+                        .await
+                }
+                StatsAction::Dailygasused {
+                    startdate,
+                    enddate,
+                    sort,
+                    raw,
+                } => commands::stats::dailygasused(&client, &startdate, &enddate, &sort, raw).await,
             }
         }
         Commands::Token { action } => {
