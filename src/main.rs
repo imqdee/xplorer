@@ -228,6 +228,34 @@ enum AccountAction {
         #[arg(long)]
         raw: bool,
     },
+    /// Get ERC-20 token balance for an address and contract
+    Tokenbalance {
+        /// Account address
+        address: String,
+        /// Token contract address
+        #[arg(long)]
+        contractaddress: String,
+        /// Block tag (default: latest)
+        #[arg(long, default_value = "latest")]
+        tag: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get ERC-20 token balance at a historical block [Pro]
+    Tokenbalancehistory {
+        /// Account address
+        address: String,
+        /// Token contract address
+        #[arg(long)]
+        contractaddress: String,
+        /// Block number to check balance at
+        #[arg(long)]
+        blockno: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
     /// Get ERC-20 token holdings for an address [Pro]
     Addresstokenbalance {
         /// Account address
@@ -699,6 +727,30 @@ async fn run() -> Result<(), XplorerError> {
                         &address,
                         contractaddress.as_deref(),
                         &pagination,
+                        raw,
+                    )
+                    .await
+                }
+                AccountAction::Tokenbalance {
+                    address,
+                    contractaddress,
+                    tag,
+                    raw,
+                } => {
+                    commands::account::tokenbalance(&client, &address, &contractaddress, &tag, raw)
+                        .await
+                }
+                AccountAction::Tokenbalancehistory {
+                    address,
+                    contractaddress,
+                    blockno,
+                    raw,
+                } => {
+                    commands::account::tokenbalancehistory(
+                        &client,
+                        &address,
+                        &contractaddress,
+                        &blockno,
                         raw,
                     )
                     .await

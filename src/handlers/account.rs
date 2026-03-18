@@ -217,6 +217,70 @@ pub async fn format_balancehistory(
     Ok(output)
 }
 
+pub async fn format_tokenbalance(
+    client: &EtherscanClient,
+    params: &[(&str, &str)],
+) -> Result<String, XplorerError> {
+    let response = client.call_api("account", "tokenbalance", params).await?;
+    check_api_status(&response)?;
+
+    let result = &response["result"];
+    let mut output = String::new();
+
+    let address = params
+        .iter()
+        .find(|(k, _)| *k == "address")
+        .map(|(_, v)| *v)
+        .unwrap_or("unknown");
+    let contract = params
+        .iter()
+        .find(|(k, _)| *k == "contractaddress")
+        .map(|(_, v)| *v)
+        .unwrap_or("unknown");
+
+    output.push_str(&format!("Address  : {address}\n"));
+    output.push_str(&format!("Contract : {contract}\n"));
+    output.push_str(&format!("Balance  : {}\n", result.as_str().unwrap_or("0")));
+
+    Ok(output)
+}
+
+pub async fn format_tokenbalancehistory(
+    client: &EtherscanClient,
+    params: &[(&str, &str)],
+) -> Result<String, XplorerError> {
+    let response = client
+        .call_api("account", "tokenbalancehistory", params)
+        .await?;
+    check_api_status(&response)?;
+
+    let result = &response["result"];
+    let mut output = String::new();
+
+    let address = params
+        .iter()
+        .find(|(k, _)| *k == "address")
+        .map(|(_, v)| *v)
+        .unwrap_or("unknown");
+    let contract = params
+        .iter()
+        .find(|(k, _)| *k == "contractaddress")
+        .map(|(_, v)| *v)
+        .unwrap_or("unknown");
+    let blockno = params
+        .iter()
+        .find(|(k, _)| *k == "blockno")
+        .map(|(_, v)| *v)
+        .unwrap_or("unknown");
+
+    output.push_str(&format!("Address  : {address}\n"));
+    output.push_str(&format!("Contract : {contract}\n"));
+    output.push_str(&format!("Block    : {blockno}\n"));
+    output.push_str(&format!("Balance  : {}\n", result.as_str().unwrap_or("0")));
+
+    Ok(output)
+}
+
 pub async fn format_txlist(
     client: &EtherscanClient,
     params: &[(&str, &str)],
@@ -703,6 +767,110 @@ mod tests {
 
         let client = EtherscanClient::new_with_url("k".into(), Some(1), server.url());
         let result = format_balancehistory(&client, &[("address", "0x1"), ("blockno", "1")]).await;
+        mock.assert_async().await;
+        assert!(result.unwrap_err().to_string().contains("Pro endpoint"));
+    }
+
+    // --- tokenbalance ---
+
+    #[tokio::test]
+    async fn test_format_tokenbalance_success() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("module".into(), "account".into()),
+                mockito::Matcher::UrlEncoded("action".into(), "tokenbalance".into()),
+            ]))
+            .with_status(200)
+            .with_body(mock_success(r#""1000000""#))
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("k".into(), Some(1), server.url());
+        let params = [
+            ("address", "0xabc"),
+            ("contractaddress", "0xtoken"),
+            ("tag", "latest"),
+        ];
+        let result = format_tokenbalance(&client, &params).await.unwrap();
+        mock.assert_async().await;
+
+        assert!(result.contains("Address  : 0xabc"));
+        assert!(result.contains("Contract : 0xtoken"));
+        assert!(result.contains("Balance  : 1000000"));
+    }
+
+    #[tokio::test]
+    async fn test_format_tokenbalance_error() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_body(mock_error("Invalid address"))
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("k".into(), Some(1), server.url());
+        let result =
+            format_tokenbalance(&client, &[("address", "bad"), ("contractaddress", "0x1")]).await;
+        mock.assert_async().await;
+        assert!(result.unwrap_err().to_string().contains("Invalid address"));
+    }
+
+    // --- tokenbalancehistory ---
+
+    #[tokio::test]
+    async fn test_format_tokenbalancehistory_success() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("module".into(), "account".into()),
+                mockito::Matcher::UrlEncoded("action".into(), "tokenbalancehistory".into()),
+            ]))
+            .with_status(200)
+            .with_body(mock_success(r#""5000000""#))
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("k".into(), Some(1), server.url());
+        let params = [
+            ("address", "0xabc"),
+            ("contractaddress", "0xtoken"),
+            ("blockno", "8000000"),
+        ];
+        let result = format_tokenbalancehistory(&client, &params).await.unwrap();
+        mock.assert_async().await;
+
+        assert!(result.contains("Address  : 0xabc"));
+        assert!(result.contains("Contract : 0xtoken"));
+        assert!(result.contains("Block    : 8000000"));
+        assert!(result.contains("Balance  : 5000000"));
+    }
+
+    #[tokio::test]
+    async fn test_format_tokenbalancehistory_error() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_body(mock_error("Pro endpoint"))
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("k".into(), Some(1), server.url());
+        let result = format_tokenbalancehistory(
+            &client,
+            &[
+                ("address", "0x1"),
+                ("contractaddress", "0x2"),
+                ("blockno", "1"),
+            ],
+        )
+        .await;
         mock.assert_async().await;
         assert!(result.unwrap_err().to_string().contains("Pro endpoint"));
     }

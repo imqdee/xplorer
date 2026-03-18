@@ -161,6 +161,48 @@ pub async fn token1155tx(
     }
 }
 
+pub async fn tokenbalance(
+    client: &EtherscanClient,
+    address: &str,
+    contractaddress: &str,
+    tag: &str,
+    raw: bool,
+) -> Result<(), XplorerError> {
+    let params = [
+        ("address", address),
+        ("contractaddress", contractaddress),
+        ("tag", tag),
+    ];
+    if raw {
+        super::print_raw_response(client, "account", "tokenbalance", &params).await
+    } else {
+        let formatted = handlers::account::format_tokenbalance(client, &params).await?;
+        print!("{formatted}");
+        Ok(())
+    }
+}
+
+pub async fn tokenbalancehistory(
+    client: &EtherscanClient,
+    address: &str,
+    contractaddress: &str,
+    blockno: &str,
+    raw: bool,
+) -> Result<(), XplorerError> {
+    let params = [
+        ("address", address),
+        ("contractaddress", contractaddress),
+        ("blockno", blockno),
+    ];
+    if raw {
+        super::print_raw_response(client, "account", "tokenbalancehistory", &params).await
+    } else {
+        let formatted = handlers::account::format_tokenbalancehistory(client, &params).await?;
+        print!("{formatted}");
+        Ok(())
+    }
+}
+
 pub async fn addresstokenbalance(
     client: &EtherscanClient,
     address: &str,
@@ -484,6 +526,28 @@ mod tests {
         };
         assert!(
             getdeposittxs(&client, "0x1", &pagination, true)
+                .await
+                .is_ok()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_tokenbalance_raw_mode() {
+        let mut server = mockito::Server::new_async().await;
+        let _mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("module".into(), "account".into()),
+                mockito::Matcher::UrlEncoded("action".into(), "tokenbalance".into()),
+            ]))
+            .with_status(200)
+            .with_body(r#"{"status":"1","message":"OK","result":"12345"}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("k".into(), Some(1), server.url());
+        assert!(
+            tokenbalance(&client, "0x1", "0xtoken", "latest", true)
                 .await
                 .is_ok()
         );
