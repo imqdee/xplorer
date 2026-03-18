@@ -1,6 +1,7 @@
 pub mod config;
 pub mod contract;
 pub mod raw;
+pub mod transaction;
 
 use crate::client::EtherscanClient;
 use crate::error::XplorerError;

@@ -32,6 +32,11 @@ enum Commands {
         #[command(subcommand)]
         action: ConfigAction,
     },
+    /// Query transaction status from Etherscan
+    Transaction {
+        #[command(subcommand)]
+        action: TransactionAction,
+    },
     /// Send a raw request to any Etherscan API endpoint
     Raw {
         /// Etherscan API module (e.g. account, transaction, block, stats)
@@ -86,6 +91,18 @@ enum ContractAction {
     Checkproxyverification {
         /// GUID from proxy verification submission
         guid: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+}
+
+#[derive(Subcommand)]
+enum TransactionAction {
+    /// Check execution status of a transaction (post-Byzantium: isError field)
+    Getstatus {
+        /// Transaction hash
+        txhash: String,
         /// Output raw JSON result field
         #[arg(long)]
         raw: bool,
@@ -156,6 +173,18 @@ async fn run() -> Result<(), XplorerError> {
                 }
                 ContractAction::Checkproxyverification { guid, raw } => {
                     commands::contract::check_proxy_verification(&client, &guid, raw).await
+                }
+            }
+        }
+        Commands::Transaction { action } => {
+            let cfg = config::Config::load();
+            let api_key = cfg.require_api_key()?.to_string();
+            let chain_id = resolve_chain_id(cli.chain_id)?;
+            let client = client::EtherscanClient::new(api_key, Some(chain_id));
+
+            match action {
+                TransactionAction::Getstatus { txhash, raw } => {
+                    commands::transaction::get_status(&client, &txhash, raw).await
                 }
             }
         }
