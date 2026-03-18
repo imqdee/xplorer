@@ -3,12 +3,12 @@ use crate::error::XplorerError;
 pub struct EtherscanClient {
     http: reqwest::Client,
     api_key: String,
-    chain_id: u64,
+    chain_id: Option<u64>,
     base_url: String,
 }
 
 impl EtherscanClient {
-    pub fn new(api_key: String, chain_id: u64) -> Self {
+    pub fn new(api_key: String, chain_id: Option<u64>) -> Self {
         Self {
             http: reqwest::Client::new(),
             api_key,
@@ -18,7 +18,7 @@ impl EtherscanClient {
     }
 
     #[cfg(test)]
-    pub fn new_with_url(api_key: String, chain_id: u64, base_url: String) -> Self {
+    pub fn new_with_url(api_key: String, chain_id: Option<u64>, base_url: String) -> Self {
         Self {
             http: reqwest::Client::new(),
             api_key,
@@ -27,7 +27,7 @@ impl EtherscanClient {
         }
     }
 
-    pub fn chain_id(&self) -> u64 {
+    pub fn chain_id(&self) -> Option<u64> {
         self.chain_id
     }
 
@@ -37,22 +37,22 @@ impl EtherscanClient {
         action: &str,
         params: &[(&str, &str)],
     ) -> Result<serde_json::Value, XplorerError> {
-        let chain_id_str = self.chain_id.to_string();
-        let mut query: Vec<(&str, &str)> = vec![
-            ("chainid", &chain_id_str),
-            ("module", module),
-            ("action", action),
-            ("apikey", &self.api_key),
-        ];
+        let chain_id_str = self.chain_id.map(|id| id.to_string());
+        let mut query: Vec<(&str, &str)> = Vec::new();
+        if let Some(ref cid) = chain_id_str {
+            query.push(("chainid", cid));
+        }
+        query.push(("module", module));
+        query.push(("action", action));
+        query.push(("apikey", &self.api_key));
         query.extend_from_slice(params);
 
-        let response = self
-            .http
-            .get(&self.base_url)
-            .query(&query)
-            .header("X-Chain-Id", self.chain_id.to_string())
-            .send()
-            .await?;
+        let mut request = self.http.get(&self.base_url).query(&query);
+        if let Some(id) = self.chain_id {
+            request = request.header("X-Chain-Id", id.to_string());
+        }
+
+        let response = request.send().await?;
 
         let body: serde_json::Value = response.json().await?;
         Ok(body)
@@ -78,7 +78,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let response = client
             .call_api("contract", "getabi", &[("address", "0x123")])
@@ -103,7 +103,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let response = client
             .call_api("contract", "getabi", &[("address", "0xinvalid")])

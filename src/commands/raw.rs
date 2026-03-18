@@ -68,7 +68,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let params = vec![
             "address=0x123".to_string(),
@@ -90,7 +90,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let params = vec!["address=0x123".to_string()];
         let result = execute(&client, "account", "txlist", &params, true).await;
@@ -101,7 +101,7 @@ mod tests {
     async fn test_execute_invalid_param_format() {
         let client = EtherscanClient::new_with_url(
             "test_key".to_string(),
-            1,
+            Some(1),
             "http://unused".to_string(),
         );
 
@@ -124,7 +124,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let params = vec!["key=val=ue".to_string()];
         let result = execute(&client, "test", "test", &params, false).await;

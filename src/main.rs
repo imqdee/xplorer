@@ -123,7 +123,7 @@ async fn run() -> Result<(), XplorerError> {
             let cfg = config::Config::load();
             let api_key = cfg.require_api_key()?.to_string();
             let chain_id = resolve_chain_id(cli.chain_id)?;
-            let client = client::EtherscanClient::new(api_key, chain_id);
+            let client = client::EtherscanClient::new(api_key, Some(chain_id));
 
             match action {
                 ContractAction::Getabi { address, raw } => {
@@ -146,7 +146,7 @@ async fn run() -> Result<(), XplorerError> {
             let cfg = config::Config::load();
             let api_key = cfg.require_api_key()?.to_string();
             let chain_id = resolve_chain_id(cli.chain_id)?;
-            let client = client::EtherscanClient::new(api_key, chain_id);
+            let client = client::EtherscanClient::new(api_key, Some(chain_id));
 
             commands::raw::execute(&client, &module, &action, &params, compact).await
         }

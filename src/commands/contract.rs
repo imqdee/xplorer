@@ -68,7 +68,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let result =
             crate::commands::print_raw_response(&client, "contract", "getabi", &[("address", "0x123")])
@@ -92,7 +92,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let result_raw = get_abi(&client, "0x123", true).await;
         assert!(result_raw.is_ok());
@@ -133,7 +133,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let result = get_source_code(&client, "0x123", true).await;
         assert!(result.is_ok());
@@ -163,7 +163,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let addresses = vec![String::from("0x123")];
         let result = get_contract_creation(&client, &addresses, true).await;

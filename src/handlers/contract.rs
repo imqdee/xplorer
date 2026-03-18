@@ -79,7 +79,10 @@ pub async fn format_source_code(
 
     let mut output = String::new();
     output.push_str(&format!("// Contract Name  : {}\n", entry.contract_name));
-    output.push_str(&format!("// Chain ID       : {}\n", client.chain_id()));
+    output.push_str(&format!(
+        "// Chain ID       : {}\n",
+        client.chain_id().map_or("N/A".to_string(), |id| id.to_string())
+    ));
     output.push_str(&format!("// Compiler       : {}\n", entry.compiler_version));
     output.push_str(&format!("// EVM Version    : {}\n", entry.evm_version));
     output.push_str(&format!(
@@ -179,7 +182,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let result = format_abi(&client, "0x123").await.unwrap();
         mock.assert_async().await;
@@ -200,7 +203,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let result = format_abi(&client, "0xinvalid").await;
         mock.assert_async().await;
@@ -246,7 +249,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let result = format_source_code(&client, "0x123").await.unwrap();
         mock.assert_async().await;
@@ -281,7 +284,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let result = format_contract_creation(&client, &[String::from("0x123")])
             .await
@@ -328,7 +331,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let result =
             format_contract_creation(&client, &[String::from("0x123"), String::from("0x456")])
@@ -366,7 +369,7 @@ mod tests {
             .create_async()
             .await;
 
-        let client = EtherscanClient::new_with_url("test_key".to_string(), 1, server.url());
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
 
         let result = format_contract_creation(&client, &[String::from("0x123")])
             .await
