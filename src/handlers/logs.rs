@@ -1,7 +1,8 @@
 use crate::client::EtherscanClient;
 use crate::error::XplorerError;
-use chrono::DateTime;
 use serde::Deserialize;
+
+use super::fmt::{format_timestamp, hex_to_u64};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,19 +19,6 @@ pub struct LogEntry {
     pub log_index: String,
     pub transaction_hash: String,
     pub transaction_index: String,
-}
-
-fn hex_to_u64(hex: &str) -> Option<u64> {
-    let stripped = hex.strip_prefix("0x").unwrap_or(hex);
-    u64::from_str_radix(stripped, 16).ok()
-}
-
-fn format_timestamp(hex: &str) -> String {
-    hex_to_u64(hex)
-        .and_then(|ts| i64::try_from(ts).ok())
-        .and_then(|ts| DateTime::from_timestamp(ts, 0))
-        .map(|dt| dt.format("%Y-%m-%d %H:%M:%S UTC").to_string())
-        .unwrap_or_else(|| hex.to_string())
 }
 
 pub async fn format_logs(
@@ -102,20 +90,6 @@ pub async fn format_logs(
 mod tests {
     use super::*;
     use crate::client::EtherscanClient;
-
-    #[test]
-    fn test_hex_to_u64() {
-        assert_eq!(hex_to_u64("0xe62a42"), Some(15_084_098));
-        assert_eq!(hex_to_u64("0x0"), Some(0));
-        assert_eq!(hex_to_u64("0x4b"), Some(75));
-        assert_eq!(hex_to_u64("invalid"), None);
-    }
-
-    #[test]
-    fn test_format_timestamp() {
-        assert_eq!(format_timestamp("0x62c2bc6f"), "2022-07-04 10:09:51 UTC");
-        assert_eq!(format_timestamp("invalid"), "invalid");
-    }
 
     #[tokio::test]
     async fn test_format_logs_success() {

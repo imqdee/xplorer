@@ -5,6 +5,7 @@ mod error;
 mod handlers;
 
 use clap::{Parser, Subcommand};
+use commands::account::PaginationParams;
 use error::XplorerError;
 use std::env;
 
@@ -22,6 +23,11 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Query account data from Etherscan
+    Account {
+        #[command(subcommand)]
+        action: Box<AccountAction>,
+    },
     /// Query contract data from Etherscan
     Contract {
         #[command(subcommand)]
@@ -71,6 +77,319 @@ enum Commands {
         /// Output single-line JSON instead of pretty-printed
         #[arg(long)]
         compact: bool,
+    },
+}
+
+#[derive(Subcommand)]
+enum AccountAction {
+    /// Get ETH balance for an address
+    Balance {
+        /// Account address
+        address: String,
+        /// Block tag (default: latest)
+        #[arg(long, default_value = "latest")]
+        tag: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get ETH balance at a historical block [Pro]
+    Balancehistory {
+        /// Account address
+        address: String,
+        /// Block number to check balance at
+        #[arg(long)]
+        blockno: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get normal transactions for an address
+    Txlist {
+        /// Account address
+        address: String,
+        /// Starting block number
+        #[arg(long)]
+        startblock: Option<String>,
+        /// Ending block number
+        #[arg(long)]
+        endblock: Option<String>,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Sort order (asc/desc)
+        #[arg(long)]
+        sort: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get internal transactions for an address
+    Txlistinternal {
+        /// Account address
+        address: String,
+        /// Starting block number
+        #[arg(long)]
+        startblock: Option<String>,
+        /// Ending block number
+        #[arg(long)]
+        endblock: Option<String>,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Sort order (asc/desc)
+        #[arg(long)]
+        sort: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get ERC-20 token transfer events for an address
+    Tokentx {
+        /// Account address
+        address: String,
+        /// Filter by token contract address
+        #[arg(long)]
+        contractaddress: Option<String>,
+        /// Starting block number
+        #[arg(long)]
+        startblock: Option<String>,
+        /// Ending block number
+        #[arg(long)]
+        endblock: Option<String>,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Sort order (asc/desc)
+        #[arg(long)]
+        sort: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get ERC-721 (NFT) token transfer events for an address
+    Tokennfttx {
+        /// Account address
+        address: String,
+        /// Filter by token contract address
+        #[arg(long)]
+        contractaddress: Option<String>,
+        /// Starting block number
+        #[arg(long)]
+        startblock: Option<String>,
+        /// Ending block number
+        #[arg(long)]
+        endblock: Option<String>,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Sort order (asc/desc)
+        #[arg(long)]
+        sort: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get ERC-1155 token transfer events for an address
+    Token1155tx {
+        /// Account address
+        address: String,
+        /// Filter by token contract address
+        #[arg(long)]
+        contractaddress: Option<String>,
+        /// Starting block number
+        #[arg(long)]
+        startblock: Option<String>,
+        /// Ending block number
+        #[arg(long)]
+        endblock: Option<String>,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Sort order (asc/desc)
+        #[arg(long)]
+        sort: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get ERC-20 token holdings for an address [Pro]
+    Addresstokenbalance {
+        /// Account address
+        address: String,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get ERC-721 (NFT) token holdings for an address [Pro]
+    Addresstokennftbalance {
+        /// Account address
+        address: String,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get ERC-721 inventory (token IDs) for an address and contract [Pro]
+    Addresstokennftinventory {
+        /// Account address
+        address: String,
+        /// NFT contract address
+        #[arg(long)]
+        contractaddress: Option<String>,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get blocks mined by an address
+    Getminedblocks {
+        /// Miner address
+        address: String,
+        /// Block type: blocks or uncles (default: blocks)
+        #[arg(long, default_value = "blocks")]
+        blocktype: String,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get L2 deposit transactions for an address
+    Getdeposittxs {
+        /// Account address
+        address: String,
+        /// Starting block number
+        #[arg(long)]
+        startblock: Option<String>,
+        /// Ending block number
+        #[arg(long)]
+        endblock: Option<String>,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Sort order (asc/desc)
+        #[arg(long)]
+        sort: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get L2 withdrawal transactions for an address
+    Getwithdrawaltxs {
+        /// Account address
+        address: String,
+        /// Starting block number
+        #[arg(long)]
+        startblock: Option<String>,
+        /// Ending block number
+        #[arg(long)]
+        endblock: Option<String>,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Sort order (asc/desc)
+        #[arg(long)]
+        sort: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get beacon chain withdrawal transactions for an address
+    #[command(name = "txsbeaconwithdrawal")]
+    TxsBeaconWithdrawal {
+        /// Account address
+        address: String,
+        /// Starting block number
+        #[arg(long)]
+        startblock: Option<String>,
+        /// Ending block number
+        #[arg(long)]
+        endblock: Option<String>,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Sort order (asc/desc)
+        #[arg(long)]
+        sort: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get bridge transactions for an address
+    Txnbridge {
+        /// Account address
+        address: String,
+        /// Starting block number
+        #[arg(long)]
+        startblock: Option<String>,
+        /// Ending block number
+        #[arg(long)]
+        endblock: Option<String>,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Sort order (asc/desc)
+        #[arg(long)]
+        sort: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get the address that funded an account
+    Fundedby {
+        /// Account address
+        address: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
     },
 }
 
@@ -255,6 +574,277 @@ async fn run() -> Result<(), XplorerError> {
                 ConfigSetting::ApiKey { key } => commands::config::set_api_key(key),
             },
         },
+        Commands::Account { action } => {
+            let cfg = config::Config::load();
+            let api_key = cfg.require_api_key()?.to_string();
+            let chain_id = resolve_chain_id(cli.chain_id)?;
+            let client = client::EtherscanClient::new(api_key, Some(chain_id));
+
+            match *action {
+                AccountAction::Balance { address, tag, raw } => {
+                    commands::account::balance(&client, &address, &tag, raw).await
+                }
+                AccountAction::Balancehistory {
+                    address,
+                    blockno,
+                    raw,
+                } => commands::account::balancehistory(&client, &address, &blockno, raw).await,
+                AccountAction::Txlist {
+                    address,
+                    startblock,
+                    endblock,
+                    page,
+                    offset,
+                    sort,
+                    raw,
+                } => {
+                    let pagination = PaginationParams {
+                        startblock: startblock.as_deref(),
+                        endblock: endblock.as_deref(),
+                        page: page.as_deref(),
+                        offset: offset.as_deref(),
+                        sort: sort.as_deref(),
+                    };
+                    commands::account::txlist(&client, &address, &pagination, raw).await
+                }
+                AccountAction::Txlistinternal {
+                    address,
+                    startblock,
+                    endblock,
+                    page,
+                    offset,
+                    sort,
+                    raw,
+                } => {
+                    let pagination = PaginationParams {
+                        startblock: startblock.as_deref(),
+                        endblock: endblock.as_deref(),
+                        page: page.as_deref(),
+                        offset: offset.as_deref(),
+                        sort: sort.as_deref(),
+                    };
+                    commands::account::txlistinternal(&client, &address, &pagination, raw).await
+                }
+                AccountAction::Tokentx {
+                    address,
+                    contractaddress,
+                    startblock,
+                    endblock,
+                    page,
+                    offset,
+                    sort,
+                    raw,
+                } => {
+                    let pagination = PaginationParams {
+                        startblock: startblock.as_deref(),
+                        endblock: endblock.as_deref(),
+                        page: page.as_deref(),
+                        offset: offset.as_deref(),
+                        sort: sort.as_deref(),
+                    };
+                    commands::account::tokentx(
+                        &client,
+                        &address,
+                        contractaddress.as_deref(),
+                        &pagination,
+                        raw,
+                    )
+                    .await
+                }
+                AccountAction::Tokennfttx {
+                    address,
+                    contractaddress,
+                    startblock,
+                    endblock,
+                    page,
+                    offset,
+                    sort,
+                    raw,
+                } => {
+                    let pagination = PaginationParams {
+                        startblock: startblock.as_deref(),
+                        endblock: endblock.as_deref(),
+                        page: page.as_deref(),
+                        offset: offset.as_deref(),
+                        sort: sort.as_deref(),
+                    };
+                    commands::account::tokennfttx(
+                        &client,
+                        &address,
+                        contractaddress.as_deref(),
+                        &pagination,
+                        raw,
+                    )
+                    .await
+                }
+                AccountAction::Token1155tx {
+                    address,
+                    contractaddress,
+                    startblock,
+                    endblock,
+                    page,
+                    offset,
+                    sort,
+                    raw,
+                } => {
+                    let pagination = PaginationParams {
+                        startblock: startblock.as_deref(),
+                        endblock: endblock.as_deref(),
+                        page: page.as_deref(),
+                        offset: offset.as_deref(),
+                        sort: sort.as_deref(),
+                    };
+                    commands::account::token1155tx(
+                        &client,
+                        &address,
+                        contractaddress.as_deref(),
+                        &pagination,
+                        raw,
+                    )
+                    .await
+                }
+                AccountAction::Addresstokenbalance {
+                    address,
+                    page,
+                    offset,
+                    raw,
+                } => {
+                    commands::account::addresstokenbalance(
+                        &client,
+                        &address,
+                        page.as_deref(),
+                        offset.as_deref(),
+                        raw,
+                    )
+                    .await
+                }
+                AccountAction::Addresstokennftbalance {
+                    address,
+                    page,
+                    offset,
+                    raw,
+                } => {
+                    commands::account::addresstokennftbalance(
+                        &client,
+                        &address,
+                        page.as_deref(),
+                        offset.as_deref(),
+                        raw,
+                    )
+                    .await
+                }
+                AccountAction::Addresstokennftinventory {
+                    address,
+                    contractaddress,
+                    page,
+                    offset,
+                    raw,
+                } => {
+                    commands::account::addresstokennftinventory(
+                        &client,
+                        &address,
+                        contractaddress.as_deref(),
+                        page.as_deref(),
+                        offset.as_deref(),
+                        raw,
+                    )
+                    .await
+                }
+                AccountAction::Getminedblocks {
+                    address,
+                    blocktype,
+                    page,
+                    offset,
+                    raw,
+                } => {
+                    commands::account::getminedblocks(
+                        &client,
+                        &address,
+                        &blocktype,
+                        page.as_deref(),
+                        offset.as_deref(),
+                        raw,
+                    )
+                    .await
+                }
+                AccountAction::Getdeposittxs {
+                    address,
+                    startblock,
+                    endblock,
+                    page,
+                    offset,
+                    sort,
+                    raw,
+                } => {
+                    let pagination = PaginationParams {
+                        startblock: startblock.as_deref(),
+                        endblock: endblock.as_deref(),
+                        page: page.as_deref(),
+                        offset: offset.as_deref(),
+                        sort: sort.as_deref(),
+                    };
+                    commands::account::getdeposittxs(&client, &address, &pagination, raw).await
+                }
+                AccountAction::Getwithdrawaltxs {
+                    address,
+                    startblock,
+                    endblock,
+                    page,
+                    offset,
+                    sort,
+                    raw,
+                } => {
+                    let pagination = PaginationParams {
+                        startblock: startblock.as_deref(),
+                        endblock: endblock.as_deref(),
+                        page: page.as_deref(),
+                        offset: offset.as_deref(),
+                        sort: sort.as_deref(),
+                    };
+                    commands::account::getwithdrawaltxs(&client, &address, &pagination, raw).await
+                }
+                AccountAction::TxsBeaconWithdrawal {
+                    address,
+                    startblock,
+                    endblock,
+                    page,
+                    offset,
+                    sort,
+                    raw,
+                } => {
+                    let pagination = PaginationParams {
+                        startblock: startblock.as_deref(),
+                        endblock: endblock.as_deref(),
+                        page: page.as_deref(),
+                        offset: offset.as_deref(),
+                        sort: sort.as_deref(),
+                    };
+                    commands::account::txsbeaconwithdrawal(&client, &address, &pagination, raw)
+                        .await
+                }
+                AccountAction::Txnbridge {
+                    address,
+                    startblock,
+                    endblock,
+                    page,
+                    offset,
+                    sort,
+                    raw,
+                } => {
+                    let pagination = PaginationParams {
+                        startblock: startblock.as_deref(),
+                        endblock: endblock.as_deref(),
+                        page: page.as_deref(),
+                        offset: offset.as_deref(),
+                        sort: sort.as_deref(),
+                    };
+                    commands::account::txnbridge(&client, &address, &pagination, raw).await
+                }
+                AccountAction::Fundedby { address, raw } => {
+                    commands::account::fundedby(&client, &address, raw).await
+                }
+            }
+        }
         Commands::Contract { action } => {
             let cfg = config::Config::load();
             let api_key = cfg.require_api_key()?.to_string();
