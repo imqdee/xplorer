@@ -32,6 +32,11 @@ enum Commands {
         #[command(subcommand)]
         action: ConfigAction,
     },
+    /// Query event logs from Etherscan
+    Logs {
+        #[command(subcommand)]
+        action: LogsAction,
+    },
     /// Query transaction status from Etherscan
     Transaction {
         #[command(subcommand)]
@@ -91,6 +96,61 @@ enum ContractAction {
     Checkproxyverification {
         /// GUID from proxy verification submission
         guid: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+}
+
+#[derive(Subcommand)]
+enum LogsAction {
+    /// Get event logs by address and/or topics within a block range
+    Getlogs {
+        /// Starting block number
+        #[arg(long)]
+        from_block: String,
+        /// Ending block number
+        #[arg(long)]
+        to_block: String,
+        /// Contract address to filter logs
+        #[arg(long)]
+        address: Option<String>,
+        /// Topic 0 (event signature hash)
+        #[arg(long)]
+        topic0: Option<String>,
+        /// Topic 1
+        #[arg(long)]
+        topic1: Option<String>,
+        /// Topic 2
+        #[arg(long)]
+        topic2: Option<String>,
+        /// Topic 3
+        #[arg(long)]
+        topic3: Option<String>,
+        /// Operator between topic0 and topic1 (and/or)
+        #[arg(long)]
+        topic0_1_opr: Option<String>,
+        /// Operator between topic0 and topic2 (and/or)
+        #[arg(long)]
+        topic0_2_opr: Option<String>,
+        /// Operator between topic0 and topic3 (and/or)
+        #[arg(long)]
+        topic0_3_opr: Option<String>,
+        /// Operator between topic1 and topic2 (and/or)
+        #[arg(long)]
+        topic1_2_opr: Option<String>,
+        /// Operator between topic1 and topic3 (and/or)
+        #[arg(long)]
+        topic1_3_opr: Option<String>,
+        /// Operator between topic2 and topic3 (and/or)
+        #[arg(long)]
+        topic2_3_opr: Option<String>,
+        /// Page number for pagination
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
         /// Output raw JSON result field
         #[arg(long)]
         raw: bool,
@@ -181,6 +241,54 @@ async fn run() -> Result<(), XplorerError> {
                 }
                 ContractAction::Checkproxyverification { guid, raw } => {
                     commands::contract::check_proxy_verification(&client, &guid, raw).await
+                }
+            }
+        }
+        Commands::Logs { action } => {
+            let cfg = config::Config::load();
+            let api_key = cfg.require_api_key()?.to_string();
+            let chain_id = resolve_chain_id(cli.chain_id)?;
+            let client = client::EtherscanClient::new(api_key, Some(chain_id));
+
+            match action {
+                LogsAction::Getlogs {
+                    from_block,
+                    to_block,
+                    address,
+                    topic0,
+                    topic1,
+                    topic2,
+                    topic3,
+                    topic0_1_opr,
+                    topic0_2_opr,
+                    topic0_3_opr,
+                    topic1_2_opr,
+                    topic1_3_opr,
+                    topic2_3_opr,
+                    page,
+                    offset,
+                    raw,
+                } => {
+                    commands::logs::get_logs(
+                        &client,
+                        &from_block,
+                        &to_block,
+                        address.as_deref(),
+                        topic0.as_deref(),
+                        topic1.as_deref(),
+                        topic2.as_deref(),
+                        topic3.as_deref(),
+                        topic0_1_opr.as_deref(),
+                        topic0_2_opr.as_deref(),
+                        topic0_3_opr.as_deref(),
+                        topic1_2_opr.as_deref(),
+                        topic1_3_opr.as_deref(),
+                        topic2_3_opr.as_deref(),
+                        page.as_deref(),
+                        offset.as_deref(),
+                        raw,
+                    )
+                    .await
                 }
             }
         }

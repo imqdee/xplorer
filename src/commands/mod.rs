@@ -1,5 +1,6 @@
 pub mod config;
 pub mod contract;
+pub mod logs;
 pub mod raw;
 pub mod transaction;
 
