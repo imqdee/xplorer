@@ -66,6 +66,27 @@ pub async fn check_verify_status(
     }
 }
 
+pub async fn check_proxy_verification(
+    client: &EtherscanClient,
+    guid: &str,
+    raw: bool,
+) -> Result<(), XplorerError> {
+    if raw {
+        super::print_raw_response(
+            client,
+            "contract",
+            "checkproxyverification",
+            &[("guid", guid)],
+        )
+        .await
+    } else {
+        let formatted =
+            handlers::contract::format_proxy_verification_status(client, guid).await?;
+        print!("{formatted}");
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

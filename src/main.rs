@@ -82,6 +82,14 @@ enum ContractAction {
         #[arg(long)]
         raw: bool,
     },
+    /// Check proxy contract verification submission status
+    Checkproxyverification {
+        /// GUID from proxy verification submission
+        guid: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -145,6 +153,9 @@ async fn run() -> Result<(), XplorerError> {
                 }
                 ContractAction::Checkverifystatus { guid, raw } => {
                     commands::contract::check_verify_status(&client, &guid, raw).await
+                }
+                ContractAction::Checkproxyverification { guid, raw } => {
+                    commands::contract::check_proxy_verification(&client, &guid, raw).await
                 }
             }
         }

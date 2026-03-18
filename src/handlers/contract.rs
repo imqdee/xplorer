@@ -183,6 +183,24 @@ pub async fn format_verify_status(
     Ok(format!("Status : {result}\n"))
 }
 
+pub async fn format_proxy_verification_status(
+    client: &EtherscanClient,
+    guid: &str,
+) -> Result<String, XplorerError> {
+    let response = client
+        .call_api("contract", "checkproxyverification", &[("guid", guid)])
+        .await?;
+
+    let status = response["status"].as_str().unwrap_or("0");
+    if status == "0" {
+        let message = response["result"].as_str().unwrap_or("Unknown API error");
+        return Err(XplorerError::Api(message.to_string()));
+    }
+
+    let result = response["result"].as_str().unwrap_or("Unknown");
+    Ok(format!("Status : {result}\n"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -444,5 +462,33 @@ mod tests {
 
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Pending in queue"));
+    }
+
+    #[tokio::test]
+    async fn test_format_proxy_verification_status_success() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("module".into(), "contract".into()),
+                mockito::Matcher::UrlEncoded("action".into(), "checkproxyverification".into()),
+                mockito::Matcher::UrlEncoded("guid".into(), "proxy123".into()),
+            ]))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{"status":"1","message":"OK","result":"The proxy's implementation contract is found at 0x123"}"#,
+            )
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
+
+        let result = format_proxy_verification_status(&client, "proxy123")
+            .await
+            .unwrap();
+        mock.assert_async().await;
+
+        assert!(result.contains("implementation contract is found"));
     }
 }
