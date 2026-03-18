@@ -107,6 +107,14 @@ enum TransactionAction {
         #[arg(long)]
         raw: bool,
     },
+    /// Check transaction receipt status (1 = success, 0 = failed)
+    Gettxreceiptstatus {
+        /// Transaction hash
+        txhash: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -185,6 +193,9 @@ async fn run() -> Result<(), XplorerError> {
             match action {
                 TransactionAction::Getstatus { txhash, raw } => {
                     commands::transaction::get_status(&client, &txhash, raw).await
+                }
+                TransactionAction::Gettxreceiptstatus { txhash, raw } => {
+                    commands::transaction::get_tx_receipt_status(&client, &txhash, raw).await
                 }
             }
         }

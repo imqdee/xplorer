@@ -39,6 +39,37 @@ pub async fn format_tx_status(
     Ok(output)
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ReceiptStatus {
+    pub status: String,
+}
+
+pub async fn format_tx_receipt_status(
+    client: &EtherscanClient,
+    txhash: &str,
+) -> Result<String, XplorerError> {
+    let response = client
+        .call_api("transaction", "gettxreceiptstatus", &[("txhash", txhash)])
+        .await?;
+
+    let status = response["status"].as_str().unwrap_or("0");
+    if status == "0" {
+        let message = response["result"].as_str().unwrap_or("Unknown API error");
+        return Err(XplorerError::Api(message.to_string()));
+    }
+
+    let entry: ReceiptStatus = serde_json::from_value(response["result"].clone())
+        .map_err(|e| XplorerError::Api(format!("Failed to parse receipt status: {e}")))?;
+
+    let receipt_label = if entry.status == "1" {
+        "Success"
+    } else {
+        "Failed"
+    };
+
+    Ok(format!("Tx Hash  : {txhash}\nReceipt  : {receipt_label}\n"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -93,5 +124,49 @@ mod tests {
 
         assert!(result.contains("Status   : Failed"));
         assert!(result.contains("Error    : Bad jump destination"));
+    }
+
+    #[tokio::test]
+    async fn test_format_tx_receipt_status_success() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("module".into(), "transaction".into()),
+                mockito::Matcher::UrlEncoded("action".into(), "gettxreceiptstatus".into()),
+            ]))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"status":"1","message":"OK","result":{"status":"1"}}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
+
+        let result = format_tx_receipt_status(&client, "0xabc").await.unwrap();
+        mock.assert_async().await;
+
+        assert!(result.contains("Tx Hash  : 0xabc"));
+        assert!(result.contains("Receipt  : Success"));
+    }
+
+    #[tokio::test]
+    async fn test_format_tx_receipt_status_failed() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"status":"1","message":"OK","result":{"status":"0"}}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_with_url("test_key".to_string(), Some(1), server.url());
+
+        let result = format_tx_receipt_status(&client, "0xfail").await.unwrap();
+        mock.assert_async().await;
+
+        assert!(result.contains("Receipt  : Failed"));
     }
 }
