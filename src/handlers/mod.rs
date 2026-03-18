@@ -1,3 +1,4 @@
+pub mod chainlist;
 pub mod contract;
 pub mod gas;
 pub mod logs;

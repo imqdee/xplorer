@@ -27,8 +27,41 @@ impl EtherscanClient {
         }
     }
 
+    pub fn new_minimal() -> Self {
+        Self {
+            http: reqwest::Client::new(),
+            api_key: String::new(),
+            chain_id: None,
+            base_url: "https://api.etherscan.io/v2/api".to_string(),
+        }
+    }
+
+    #[cfg(test)]
+    pub fn new_minimal_with_url(base_url: String) -> Self {
+        Self {
+            http: reqwest::Client::new(),
+            api_key: String::new(),
+            chain_id: None,
+            base_url,
+        }
+    }
+
     pub fn chain_id(&self) -> Option<u64> {
         self.chain_id
+    }
+
+    pub fn sibling_url(&self, path: &str) -> String {
+        if let Some(base) = self.base_url.rfind("/v2/") {
+            format!("{}/v2{path}", &self.base_url[..base])
+        } else {
+            format!("{}{path}", self.base_url.trim_end_matches('/'))
+        }
+    }
+
+    pub async fn fetch_url(&self, url: &str) -> Result<serde_json::Value, XplorerError> {
+        let response = self.http.get(url).send().await?;
+        let body: serde_json::Value = response.json().await?;
+        Ok(body)
     }
 
     pub async fn call_api(
@@ -113,5 +146,48 @@ mod tests {
         mock.assert_async().await;
         assert_eq!(response["status"], "0");
         assert_eq!(response["result"], "Invalid address");
+    }
+
+    #[test]
+    fn test_sibling_url() {
+        let client = EtherscanClient::new_with_url(
+            "key".to_string(),
+            Some(1),
+            "https://api.etherscan.io/v2/api".to_string(),
+        );
+        assert_eq!(
+            client.sibling_url("/chainlist"),
+            "https://api.etherscan.io/v2/chainlist"
+        );
+    }
+
+    #[test]
+    fn test_sibling_url_mock() {
+        let client =
+            EtherscanClient::new_minimal_with_url("http://localhost:1234/v2/api".to_string());
+        assert_eq!(
+            client.sibling_url("/chainlist"),
+            "http://localhost:1234/v2/chainlist"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_fetch_url() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/v2/chainlist")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"totalcount":2,"result":[]}"#)
+            .create_async()
+            .await;
+
+        let client = EtherscanClient::new_minimal_with_url(format!("{}/v2/api", server.url()));
+
+        let url = client.sibling_url("/chainlist");
+        let response = client.fetch_url(&url).await.unwrap();
+        mock.assert_async().await;
+
+        assert_eq!(response["totalcount"], 2);
     }
 }

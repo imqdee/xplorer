@@ -47,6 +47,12 @@ enum Commands {
         #[command(subcommand)]
         action: TransactionAction,
     },
+    /// List all chains supported by Etherscan
+    Chainlist {
+        /// Output raw JSON response
+        #[arg(long)]
+        raw: bool,
+    },
     /// Send a raw request to any Etherscan API endpoint
     Raw {
         /// Etherscan API module (e.g. account, transaction, block, stats)
@@ -342,6 +348,10 @@ async fn run() -> Result<(), XplorerError> {
                     commands::transaction::get_tx_receipt_status(&client, &txhash, raw).await
                 }
             }
+        }
+        Commands::Chainlist { raw } => {
+            let client = client::EtherscanClient::new_minimal();
+            commands::chainlist::chainlist(&client, raw).await
         }
         Commands::Raw {
             module,
