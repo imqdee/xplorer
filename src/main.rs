@@ -48,6 +48,11 @@ enum Commands {
         #[command(subcommand)]
         action: Box<LogsAction>,
     },
+    /// Query token data from Etherscan
+    Token {
+        #[command(subcommand)]
+        action: TokenAction,
+    },
     /// Query transaction status from Etherscan
     Transaction {
         #[command(subcommand)]
@@ -560,6 +565,54 @@ enum TransactionAction {
 }
 
 #[derive(Subcommand)]
+enum TokenAction {
+    /// Get token info by contract address
+    Tokeninfo {
+        /// Token contract address
+        contractaddress: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get total number of token holders [Pro]
+    Tokenholdercount {
+        /// Token contract address
+        contractaddress: String,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get list of token holders [Pro]
+    Tokenholderlist {
+        /// Token contract address
+        contractaddress: String,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+    /// Get top token holders [Pro]
+    Topholders {
+        /// Token contract address
+        contractaddress: String,
+        /// Page number
+        #[arg(long)]
+        page: Option<String>,
+        /// Number of results per page
+        #[arg(long)]
+        offset: Option<String>,
+        /// Output raw JSON result field
+        #[arg(long)]
+        raw: bool,
+    },
+}
+
+#[derive(Subcommand)]
 enum ConfigAction {
     /// Set a configuration value
     Set {
@@ -974,6 +1027,53 @@ async fn run() -> Result<(), XplorerError> {
                         topic1_2_opr.as_deref(),
                         topic1_3_opr.as_deref(),
                         topic2_3_opr.as_deref(),
+                        page.as_deref(),
+                        offset.as_deref(),
+                        raw,
+                    )
+                    .await
+                }
+            }
+        }
+        Commands::Token { action } => {
+            let cfg = config::Config::load();
+            let api_key = cfg.require_api_key()?.to_string();
+            let chain_id = resolve_chain_id(cli.chain_id)?;
+            let client = client::EtherscanClient::new(api_key, Some(chain_id));
+
+            match action {
+                TokenAction::Tokeninfo {
+                    contractaddress,
+                    raw,
+                } => commands::token::tokeninfo(&client, &contractaddress, raw).await,
+                TokenAction::Tokenholdercount {
+                    contractaddress,
+                    raw,
+                } => commands::token::tokenholdercount(&client, &contractaddress, raw).await,
+                TokenAction::Tokenholderlist {
+                    contractaddress,
+                    page,
+                    offset,
+                    raw,
+                } => {
+                    commands::token::tokenholderlist(
+                        &client,
+                        &contractaddress,
+                        page.as_deref(),
+                        offset.as_deref(),
+                        raw,
+                    )
+                    .await
+                }
+                TokenAction::Topholders {
+                    contractaddress,
+                    page,
+                    offset,
+                    raw,
+                } => {
+                    commands::token::topholders(
+                        &client,
+                        &contractaddress,
                         page.as_deref(),
                         offset.as_deref(),
                         raw,
