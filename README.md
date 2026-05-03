@@ -55,6 +55,17 @@ xplorer --chain-id 1 account balance 0xde0B2...9BAe --raw | jq .
 
 xplorer covers 72 read-only endpoints across 10 modules. Endpoints marked **[Pro]** require an [Etherscan Pro](https://docs.etherscan.io/getting-started/endpoint-urls#pro-api) API key.
 
+### Free tier pagination cap
+
+Effective **July 1, 2026**, Etherscan reduces the max records per request from 10,000 to **1,000** on the Free tier for the following endpoints. Pass `--offset 1000` (or lower) and iterate with `--page` to walk past the cap.
+
+- `account txlist`, `txlistinternal`, `tokentx`, `tokennfttx`, `token1155tx`
+- `account getminedblocks`, `getdeposittxs`, `txsbeaconwithdrawal`
+- `logs getlogs`
+- `stats chainsize`, `token tokenholderlist` (Pro endpoints, free tier subset)
+
+Separately, **Get Internal Transactions by Block Range** (the address-less form of `txlistinternal`, accessed via `xplorer raw account txlistinternal --param startblock=X --param endblock=Y`) becomes Pro-only on the same date. The dedicated `account txlistinternal <address>` command queries the by-address variant and stays on Free tier.
+
 ### Account
 
 | Command | Description |
